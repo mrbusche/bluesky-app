@@ -1,19 +1,20 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
 
   // Import the official Bluesky SDK
   import { AtpAgent } from '@atproto/api';
 
   // --- Svelte State Management ---
   let agent = null;
-  let session = null; // Storing the session object will determine if the user is logged in
+  let session = null;
   let posts = [];
   let timelineCursor = null;
 
   // UI State
-  let isLoading = true; // Start as true to show loader while checking session
-  let isFetchingMore = false; // For infinite scroll loading
+  let isLoading = true;
+  let isFetchingMore = false;
   let loginError = '';
+  let isRestoringScroll = false;
 
   // Form input bindings
   let handle = '';
@@ -21,12 +22,11 @@
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
-  const SCROLL_POSITION_KEY = 'blueskyScrollPosition';
+  const LAST_VIEWED_POST_URI_KEY = 'blueskyLastViewedPostUri';
   const SESSION_KEY = 'blueskySession';
 
   // --- Lifecycle & Initialization ---
 
-  // onMount is Svelte's equivalent of running code when the component first loads
   onMount(async () => {
     const savedSession = localStorage.getItem(SESSION_KEY);
 
@@ -35,13 +35,14 @@
       try {
         const sessionData = JSON.parse(savedSession);
         await agent.resumeSession(sessionData);
-        session = agent.session; // This assignment triggers the UI to switch to the feed view
+        session = agent.session;
         console.log('Session resumed successfully.');
-        await fetchTimeline(true); // Initial fetch, restore scroll
+        await fetchTimeline(); // Fetch the first page
+        await restoreScrollPosition(); // Restore position, fetching more if needed
       } catch (error) {
         console.error('Failed to resume session:', error);
         localStorage.removeItem(SESSION_KEY);
-        session = null; // Ensure we are logged out
+        session = null;
       }
     }
     isLoading = false;
@@ -74,44 +75,34 @@
 
   function handleLogout() {
     localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(SCROLL_POSITION_KEY);
+    localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
     session = null;
     posts = [];
     timelineCursor = null;
-    // Reloading the page ensures a clean state
     window.location.reload();
   }
 
-  async function fetchTimeline(shouldRestoreScroll = false) {
+  async function fetchTimeline() {
     if (isFetchingMore || !session) return;
     isFetchingMore = true;
 
     try {
-      // Build params without including a null/undefined cursor. The API treats literal 'cursor=null' poorly.
       const params = { limit: 30 };
-      if (timelineCursor) params.cursor = timelineCursor; // only include when we actually have one
+      if (timelineCursor) {
+        params.cursor = timelineCursor;
+      }
 
       const response = await agent.getTimeline(params);
 
-      // Debug logging (can be removed later)
-      if (!response?.success) {
-        console.warn('getTimeline response not successful:', response);
-      }
-
       if (response.data.feed.length > 0) {
-        const newPosts = response.data.feed.filter((item) => item.post); // Filter for valid posts
-        posts = [...posts, ...newPosts]; // Append new posts to the existing array
+        const newPosts = response.data.feed.filter((item) => item.post);
+        posts = [...posts, ...newPosts];
         timelineCursor = response.data.cursor;
       } else {
-        // No more posts to load
-        timelineCursor = null; // Stop further requests
-      }
-
-      if (shouldRestoreScroll) {
-        restoreScrollPosition();
+        timelineCursor = null;
       }
     } catch (error) {
-      const status = error?.response?.status || error?.status; // Some fetch libs attach status
+      const status = error?.response?.status || error?.status;
       console.error('Failed to fetch timeline:', { error, status, timelineCursor });
       if (status === 502 || status === 503 || status === 504) {
         loginError = 'Feed temporarily unavailable (server error). Retrying may work.';
@@ -131,16 +122,60 @@
   function saveScrollPosition() {
     if (scrollSaveTimeout) clearTimeout(scrollSaveTimeout);
     scrollSaveTimeout = setTimeout(() => {
-      localStorage.setItem(SCROLL_POSITION_KEY, window.scrollY);
-    }, 250);
+      const header = document.querySelector('header');
+      const headerHeight = header ? header.offsetHeight : 0;
+
+      // Find the first post whose bottom edge is below the sticky header
+      const firstVisiblePost = Array.from(document.querySelectorAll('main > article')).find(
+        (el) => el.getBoundingClientRect().bottom > headerHeight,
+      );
+
+      if (firstVisiblePost) {
+        localStorage.setItem(LAST_VIEWED_POST_URI_KEY, firstVisiblePost.id);
+      }
+    }, 250); // Debounce to avoid excessive writes
   }
 
-  function restoreScrollPosition() {
-    const savedPosition = localStorage.getItem(SCROLL_POSITION_KEY);
-    if (savedPosition) {
-      requestAnimationFrame(() => {
-        window.scrollTo(0, parseInt(savedPosition, 10));
-      });
+  async function restoreScrollPosition() {
+    const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
+    if (!savedUri) return;
+
+    isRestoringScroll = true;
+    try {
+      let elementToRestore = null;
+      let attempts = 0;
+      const MAX_FETCH_ATTEMPTS = 10; // Safety break to prevent infinite loops
+
+      // Loop while the element isn't found, we still have a cursor to fetch more,
+      // and we haven't hit our safety limit.
+      while (!elementToRestore && timelineCursor && attempts < MAX_FETCH_ATTEMPTS) {
+        await tick(); // Wait for any pending DOM updates from the last fetch
+        elementToRestore = document.getElementById(savedUri);
+
+        // If not found after checking the DOM, fetch the next page of posts
+        if (!elementToRestore) {
+          console.log(`Post ${savedUri} not found, fetching more...`);
+          await fetchTimeline();
+          attempts++;
+        }
+      }
+
+      if (elementToRestore) {
+        console.log(`Post ${savedUri} found after ${attempts} fetches. Scrolling into view.`);
+        const header = document.querySelector('header');
+        const headerHeight = header ? header.offsetHeight : 0;
+        elementToRestore.scrollIntoView({ behavior: 'auto', block: 'start' });
+        if (headerHeight > 0) {
+          window.scrollBy(0, -headerHeight - 16);
+        }
+      } else {
+        console.warn(`Could not find post ${savedUri} after ${attempts} fetches. Clearing saved position.`);
+        localStorage.removeItem(LAST_VIEWED_POST_URI_KEY); // Clean up invalid URI
+      }
+    } catch (error) {
+      console.error('Error during scroll restoration:', error);
+    } finally {
+      isRestoringScroll = false;
     }
   }
 
@@ -150,27 +185,31 @@
         fetchTimeline();
       }
     }
+    // This now saves the current post URI on scroll
     saveScrollPosition();
   }
 
-  // Simple function to sanitize text for display
   const escapeHtml = (unsafe) => {
     if (!unsafe) return '';
     return unsafe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   };
 </script>
 
-<!-- svelte:window binds events to the global window object -->
 <svelte:window on:scroll={handleInfiniteScroll} />
+
+{#if isRestoringScroll}
+  <div class="fixed bottom-4 right-4 bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg z-20 flex items-center space-x-2">
+    <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+    <span>Restoring position...</span>
+  </div>
+{/if}
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
-    <!-- Initial Loading State -->
     <div class="min-h-screen flex items-center justify-center">
       <div class="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
     </div>
   {:else if session}
-    <!-- Feed View -->
     <div>
       <header class="sticky top-0 bg-gray-900 bg-opacity-80 backdrop-blur-md z-10 border-b border-gray-700">
         <div class="flex justify-between items-center p-4">
@@ -186,7 +225,7 @@
 
       <main>
         {#each posts as item (item.post.uri)}
-          <article class="p-4 border-b border-gray-700 flex space-x-4">
+          <article id={item.post.uri} class="p-4 border-b border-gray-700 flex space-x-4">
             <div>
               <img
                 src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
@@ -205,9 +244,7 @@
                 {@html escapeHtml(item.post.record.text || '').replace(/\n/g, '<br>')}
               </div>
 
-              <!-- Embedded Content: Images or Quoted Post -->
               {#if item.post.embed}
-                <!-- Images -->
                 {#if item.post.embed.images}
                   <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {#each item.post.embed.images as img}
@@ -222,7 +259,6 @@
                   </div>
                 {/if}
 
-                <!-- Quoted Post -->
                 {#if item.post.embed.$type === 'app.bsky.embed.record#view' && item.post.embed.record && !item.post.embed.record.notFound}
                   {@const quotedPost = item.post.embed.record}
                   <div class="mt-3 border border-gray-600 rounded-lg p-3">
@@ -257,7 +293,6 @@
       {/if}
     </div>
   {:else}
-    <!-- Login View -->
     <div class="min-h-screen flex items-center justify-center p-4">
       <div class="w-full max-w-sm bg-gray-800 rounded-lg shadow-lg p-8">
         <h1 class="text-3xl font-bold text-center mb-2 text-blue-400">Bluesky Client</h1>
@@ -265,7 +300,6 @@
         <form on:submit|preventDefault={handleLogin}>
           <div class="mb-4">
             <label for="handle" class="block text-gray-300 text-sm font-bold mb-2">Bluesky Handle</label>
-            <!-- bind:value creates a two-way binding between the input and the variable -->
             <input
               type="text"
               id="handle"
@@ -314,7 +348,6 @@
   {/if}
 </div>
 
-<!-- Global styles can be placed in a separate app.css or directly here -->
 <style>
   :global(body) {
     background-color: #1a202c; /* bg-gray-900 */
