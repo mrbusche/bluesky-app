@@ -6,14 +6,15 @@
 
   // --- Svelte State Management ---
   let agent = null;
-  let session = null; // Storing the session object will determine if the user is logged in
+  let session = null;
   let posts = [];
   let timelineCursor = null;
 
   // UI State
-  let isLoading = true; // Start as true to show loader while checking session
-  let isFetchingMore = false; // For infinite scroll loading
+  let isLoading = true;
+  let isFetchingMore = false;
   let loginError = '';
+  let isRestoringScroll = false;
 
   // Form input bindings
   let handle = '';
@@ -36,8 +37,8 @@
         await agent.resumeSession(sessionData);
         session = agent.session;
         console.log('Session resumed successfully.');
-        await fetchTimeline();
-        await restoreScrollPosition();
+        await fetchTimeline(); // Fetch the first page
+        await restoreScrollPosition(); // Restore position, fetching more if needed
       } catch (error) {
         console.error('Failed to resume session:', error);
         localStorage.removeItem(SESSION_KEY);
@@ -139,21 +140,42 @@
     const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
     if (!savedUri) return;
 
-    // Wait for the DOM to update after the 'posts' array has been changed
-    await tick();
+    isRestoringScroll = true;
+    try {
+      let elementToRestore = null;
+      let attempts = 0;
+      const MAX_FETCH_ATTEMPTS = 10; // Safety break to prevent infinite loops
 
-    const elementToRestore = document.getElementById(savedUri);
-    if (elementToRestore) {
-      const header = document.querySelector('header');
-      const headerHeight = header ? header.offsetHeight : 0;
+      // Loop while the element isn't found, we still have a cursor to fetch more,
+      // and we haven't hit our safety limit.
+      while (!elementToRestore && timelineCursor && attempts < MAX_FETCH_ATTEMPTS) {
+        await tick(); // Wait for any pending DOM updates from the last fetch
+        elementToRestore = document.getElementById(savedUri);
 
-      // Scroll the element to the top of the view
-      elementToRestore.scrollIntoView({ behavior: 'auto', block: 'start' });
-
-      // Then, scroll back up slightly to account for the sticky header and add some padding
-      if (headerHeight > 0) {
-        window.scrollBy(0, -headerHeight - 16);
+        // If not found after checking the DOM, fetch the next page of posts
+        if (!elementToRestore) {
+          console.log(`Post ${savedUri} not found, fetching more...`);
+          await fetchTimeline();
+          attempts++;
+        }
       }
+
+      if (elementToRestore) {
+        console.log(`Post ${savedUri} found after ${attempts} fetches. Scrolling into view.`);
+        const header = document.querySelector('header');
+        const headerHeight = header ? header.offsetHeight : 0;
+        elementToRestore.scrollIntoView({ behavior: 'auto', block: 'start' });
+        if (headerHeight > 0) {
+          window.scrollBy(0, -headerHeight - 16);
+        }
+      } else {
+        console.warn(`Could not find post ${savedUri} after ${attempts} fetches. Clearing saved position.`);
+        localStorage.removeItem(LAST_VIEWED_POST_URI_KEY); // Clean up invalid URI
+      }
+    } catch (error) {
+      console.error('Error during scroll restoration:', error);
+    } finally {
+      isRestoringScroll = false;
     }
   }
 
@@ -174,6 +196,13 @@
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
+
+{#if isRestoringScroll}
+  <div class="fixed bottom-4 right-4 bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg z-20 flex items-center space-x-2">
+    <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+    <span>Restoring position...</span>
+  </div>
+{/if}
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
