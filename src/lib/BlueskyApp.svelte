@@ -234,6 +234,13 @@
               />
             </div>
             <div class="flex-1 overflow-hidden">
+              {#if item.reason && item.reason.$type === 'app.bsky.feed.defs#reasonRepost'}
+                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+                  <span>🔁</span>
+                  <span>Reposted by</span>
+                  <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
+                </div>
+              {/if}
               <div class="flex items-center space-x-2 text-gray-400">
                 <span class="font-bold text-white truncate">{item.post.author.displayName || item.post.author.handle}</span>
                 <span class="text-sm truncate hidden sm:inline">@{item.post.author.handle}</span>
