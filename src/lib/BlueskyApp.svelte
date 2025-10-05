@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
 
   // Import the official Bluesky SDK
-  import { BskyAgent } from '@atproto/api';
+  import { AtpAgent } from '@atproto/api';
 
   // --- Svelte State Management ---
   let agent = null;
@@ -31,7 +31,7 @@
     const savedSession = localStorage.getItem(SESSION_KEY);
 
     if (savedSession) {
-      agent = new BskyAgent({ service: BLUESKY_SERVICE });
+      agent = new AtpAgent({ service: BLUESKY_SERVICE });
       try {
         const sessionData = JSON.parse(savedSession);
         await agent.resumeSession(sessionData);
