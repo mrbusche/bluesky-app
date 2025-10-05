@@ -54,7 +54,7 @@
     loginError = '';
 
     try {
-      agent = new BskyAgent({ service: BLUESKY_SERVICE });
+      agent = new AtpAgent({ service: BLUESKY_SERVICE });
       const response = await agent.login({ identifier: handle, password });
 
       if (response.success) {
