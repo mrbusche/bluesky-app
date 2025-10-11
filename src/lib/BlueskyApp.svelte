@@ -193,6 +193,28 @@
     if (!unsafe) return '';
     return unsafe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   };
+
+  const formatPostDate = (dateString) => {
+    const postDate = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now - postDate;
+    const diffInMinutes = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMs / 3600000);
+    const diffInDays = Math.floor(diffInMs / 86400000);
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h`;
+    } else if (diffInDays <= 31) {
+      return `${diffInDays}d`;
+    } else {
+      const month = postDate.getMonth() + 1;
+      const day = postDate.getDate();
+      const year = postDate.getFullYear();
+      return `${month}/${day}/${year}`;
+    }
+  };
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -238,7 +260,7 @@
                 <span class="font-bold text-white truncate">{item.post.author.displayName || item.post.author.handle}</span>
                 <span class="text-sm truncate hidden sm:inline">@{item.post.author.handle}</span>
                 <span class="text-gray-500">&middot;</span>
-                <span class="text-gray-500 text-sm flex-shrink-0">{new Date(item.post.record.createdAt).toLocaleString()}</span>
+                <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
               </div>
               <div class="text-white mt-1 whitespace-pre-wrap break-words">
                 {@html escapeHtml(item.post.record.text || '').replace(/\n/g, '<br>')}
