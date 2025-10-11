@@ -104,7 +104,7 @@
       const response = await agent.getTimeline(params);
 
       if (response.data.feed.length > 0) {
-        const newPosts = response.data.feed.filter((item) => item.post);
+        const newPosts = response.data.feed.filter((item) => item.post && !item.post.record.reply);
         posts = [...posts, ...newPosts];
         timelineCursor = response.data.cursor;
       } else {
@@ -201,6 +201,28 @@
   const escapeHtml = (unsafe) => {
     if (!unsafe) return '';
     return unsafe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  };
+
+  const formatPostDate = (dateString) => {
+    const postDate = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now - postDate;
+    const diffInMinutes = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMs / 3600000);
+    const diffInDays = Math.floor(diffInMs / 86400000);
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h`;
+    } else if (diffInDays <= 31) {
+      return `${diffInDays}d`;
+    } else {
+      const month = postDate.getMonth() + 1;
+      const day = postDate.getDate();
+      const year = postDate.getFullYear();
+      return `${month}/${day}/${year}`;
+    }
   };
 
   async function handleFollow() {
@@ -409,6 +431,13 @@
               />
             </div>
             <div class="flex-1 overflow-hidden">
+              {#if item.reason && item.reason.$type === 'app.bsky.feed.defs#reasonRepost'}
+                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+                  <span>🔁</span>
+                  <span>Reposted by</span>
+                  <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
+                </div>
+              {/if}
               <div class="flex items-center space-x-2 text-gray-400">
                 <button 
                   on:click={() => showUserProfile(item.post.author.handle)}
@@ -423,7 +452,7 @@
                   @{item.post.author.handle}
                 </button>
                 <span class="text-gray-500">&middot;</span>
-                <span class="text-gray-500 text-sm flex-shrink-0">{new Date(item.post.record.createdAt).toLocaleString()}</span>
+                <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
               </div>
               <div class="text-white mt-1 whitespace-pre-wrap break-words">
                 {@html escapeHtml(item.post.record.text || '').replace(/\n/g, '<br>')}
