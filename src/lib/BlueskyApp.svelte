@@ -19,6 +19,9 @@
   // Form input bindings
   let handle = '';
   let password = '';
+  let followHandle = '';
+  let followMessage = '';
+  let isFollowing = false;
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -193,6 +196,38 @@
     if (!unsafe) return '';
     return unsafe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   };
+
+  async function handleFollow() {
+    if (!followHandle.trim() || !session) return;
+    
+    isFollowing = true;
+    followMessage = '';
+
+    try {
+      // Resolve the handle to a DID
+      const resolvedHandle = followHandle.trim();
+      const response = await agent.resolveHandle({ handle: resolvedHandle });
+      
+      if (response.data && response.data.did) {
+        // Follow the user
+        await agent.follow(response.data.did);
+        followMessage = `Successfully followed @${resolvedHandle}!`;
+        followHandle = '';
+        
+        // Clear the success message after 3 seconds
+        setTimeout(() => {
+          followMessage = '';
+        }, 3000);
+      } else {
+        throw new Error('Could not resolve handle');
+      }
+    } catch (error) {
+      console.error('Follow error:', error);
+      followMessage = error.message || 'Failed to follow user. Please check the handle and try again.';
+    } finally {
+      isFollowing = false;
+    }
+  }
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -220,6 +255,33 @@
           >
             Logout
           </button>
+        </div>
+        <div class="px-4 pb-4">
+          <form on:submit|preventDefault={handleFollow} class="flex gap-2">
+            <input
+              type="text"
+              bind:value={followHandle}
+              placeholder="Enter handle to follow (e.g., user.bsky.social)"
+              class="flex-1 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white text-sm leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isFollowing}
+            />
+            <button
+              type="submit"
+              disabled={isFollowing || !followHandle.trim()}
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-150 ease-in-out disabled:bg-blue-800 disabled:cursor-not-allowed"
+            >
+              {#if isFollowing}
+                Following...
+              {:else}
+                Follow
+              {/if}
+            </button>
+          </form>
+          {#if followMessage}
+            <p class="text-sm mt-2 text-center" class:text-green-400={followMessage.includes('Successfully')} class:text-red-400={!followMessage.includes('Successfully')}>
+              {followMessage}
+            </p>
+          {/if}
         </div>
       </header>
 
