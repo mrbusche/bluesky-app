@@ -95,7 +95,7 @@
       const response = await agent.getTimeline(params);
 
       if (response.data.feed.length > 0) {
-        const newPosts = response.data.feed.filter((item) => item.post);
+        const newPosts = response.data.feed.filter((item) => item.post && !item.post.record.reply);
         posts = [...posts, ...newPosts];
         timelineCursor = response.data.cursor;
       } else {
