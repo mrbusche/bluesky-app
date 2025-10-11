@@ -200,11 +200,14 @@
     const diffInMs = now - postDate;
     const diffInMinutes = Math.floor(diffInMs / 60000);
     const diffInHours = Math.floor(diffInMs / 3600000);
+    const diffInDays = Math.floor(diffInMs / 86400000);
 
     if (diffInMinutes < 60) {
       return `${diffInMinutes}m`;
     } else if (diffInHours < 24) {
       return `${diffInHours}h`;
+    } else if (diffInDays <= 31) {
+      return `${diffInDays}d`;
     } else {
       const month = postDate.getMonth() + 1;
       const day = postDate.getDate();
