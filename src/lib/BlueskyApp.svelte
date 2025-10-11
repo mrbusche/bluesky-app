@@ -264,6 +264,25 @@
       isFollowing = false;
     }
   }
+
+  async function unfollowFromProfile() {
+    if (!profileData || !session || !profileData.viewer?.following) return;
+    
+    isFollowing = true;
+
+    try {
+      await agent.deleteFollow(profileData.viewer.following);
+      // Update the profile data to reflect the unfollow
+      if (profileData) {
+        profileData.viewer = { ...profileData.viewer, following: undefined };
+      }
+    } catch (error) {
+      console.error('Unfollow error:', error);
+      profileError = error.message || 'Failed to unfollow user.';
+    } finally {
+      isFollowing = false;
+    }
+  }
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -326,9 +345,17 @@
               {/if}
             </button>
           {:else}
-            <div class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md text-center">
-              Following
-            </div>
+            <button
+              on:click={unfollowFromProfile}
+              disabled={isFollowing}
+              class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-green-800 disabled:cursor-not-allowed"
+            >
+              {#if isFollowing}
+                Unfollowing...
+              {:else}
+                Following
+              {/if}
+            </button>
           {/if}
 
           {#if profileError}
