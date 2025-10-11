@@ -20,6 +20,13 @@
   let handle = '';
   let password = '';
 
+  // Profile view state
+  let showProfile = false;
+  let profileData = null;
+  let isLoadingProfile = false;
+  let profileError = '';
+  let isFollowing = false;
+
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
   const LAST_VIEWED_POST_URI_KEY = 'blueskyLastViewedPostUri';
@@ -215,6 +222,48 @@
       return `${month}/${day}/${year}`;
     }
   };
+
+  async function showUserProfile(userHandle) {
+    showProfile = true;
+    isLoadingProfile = true;
+    profileError = '';
+    profileData = null;
+
+    try {
+      const response = await agent.getProfile({ actor: userHandle });
+      profileData = response.data;
+    } catch (error) {
+      console.error('Profile fetch error:', error);
+      profileError = error.message || 'Failed to load profile.';
+    } finally {
+      isLoadingProfile = false;
+    }
+  }
+
+  function closeProfile() {
+    showProfile = false;
+    profileData = null;
+    profileError = '';
+  }
+
+  async function followFromProfile() {
+    if (!profileData || !session) return;
+    
+    isFollowing = true;
+
+    try {
+      await agent.follow(profileData.did);
+      // Update the profile data to reflect the follow
+      if (profileData) {
+        profileData.viewer = { ...profileData.viewer, following: true };
+      }
+    } catch (error) {
+      console.error('Follow error:', error);
+      profileError = error.message || 'Failed to follow user.';
+    } finally {
+      isFollowing = false;
+    }
+  }
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -223,6 +272,71 @@
   <div class="fixed bottom-4 right-4 bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg z-20 flex items-center space-x-2">
     <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
     <span>Restoring position...</span>
+  </div>
+{/if}
+
+{#if showProfile}
+  <div class="fixed inset-0 bg-black bg-opacity-75 z-30 flex items-center justify-center p-4" on:click={closeProfile}>
+    <div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6" on:click|stopPropagation>
+      <div class="flex justify-between items-start mb-4">
+        <h2 class="text-xl font-bold text-blue-400">Profile</h2>
+        <button on:click={closeProfile} class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+
+      {#if isLoadingProfile}
+        <div class="flex justify-center items-center py-8">
+          <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      {:else if profileError}
+        <p class="text-red-400 text-center py-4">{profileError}</p>
+      {:else if profileData}
+        <div class="space-y-4">
+          <div class="flex items-center space-x-4">
+            <img
+              src={profileData.avatar || 'https://placehold.co/64x64/1a202c/ffffff?text=?'}
+              alt={profileData.displayName}
+              class="w-16 h-16 rounded-full bg-gray-600"
+            />
+            <div class="flex-1">
+              <h3 class="font-bold text-white text-lg">{profileData.displayName || profileData.handle}</h3>
+              <p class="text-gray-400 text-sm">@{profileData.handle}</p>
+            </div>
+          </div>
+
+          {#if profileData.description}
+            <p class="text-white whitespace-pre-wrap break-words">{profileData.description}</p>
+          {/if}
+
+          <div class="flex space-x-4 text-sm text-gray-400">
+            <span><strong class="text-white">{profileData.followersCount || 0}</strong> followers</span>
+            <span><strong class="text-white">{profileData.followsCount || 0}</strong> following</span>
+            <span><strong class="text-white">{profileData.postsCount || 0}</strong> posts</span>
+          </div>
+
+          {#if !profileData.viewer?.following}
+            <button
+              on:click={followFromProfile}
+              disabled={isFollowing}
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-blue-800 disabled:cursor-not-allowed"
+            >
+              {#if isFollowing}
+                Following...
+              {:else}
+                Follow
+              {/if}
+            </button>
+          {:else}
+            <div class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md text-center">
+              Following
+            </div>
+          {/if}
+
+          {#if profileError}
+            <p class="text-red-400 text-sm text-center">{profileError}</p>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
 {/if}
 
@@ -264,8 +378,18 @@
                 </div>
               {/if}
               <div class="flex items-center space-x-2 text-gray-400">
-                <span class="font-bold text-white truncate">{item.post.author.displayName || item.post.author.handle}</span>
-                <span class="text-sm truncate hidden sm:inline">@{item.post.author.handle}</span>
+                <button 
+                  on:click={() => showUserProfile(item.post.author.handle)}
+                  class="font-bold text-white truncate hover:underline cursor-pointer"
+                >
+                  {item.post.author.displayName || item.post.author.handle}
+                </button>
+                <button 
+                  on:click={() => showUserProfile(item.post.author.handle)}
+                  class="text-sm truncate hidden sm:inline hover:underline cursor-pointer"
+                >
+                  @{item.post.author.handle}
+                </button>
                 <span class="text-gray-500">&middot;</span>
                 <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
               </div>
