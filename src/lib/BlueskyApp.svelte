@@ -439,6 +439,25 @@
                   </div>
                 {/if}
 
+                {#if item.post.embed.$type === 'app.bsky.embed.external#view' && item.post.embed.external}
+                  <a href={item.post.embed.external.uri} target="_blank" rel="noopener noreferrer" class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
+                    {#if item.post.embed.external.thumb}
+                      <img
+                        src={item.post.embed.external.thumb}
+                        alt={item.post.embed.external.title}
+                        class="w-full h-48 object-cover bg-gray-700"
+                      />
+                    {/if}
+                    <div class="p-3 bg-gray-800">
+                      <div class="text-white font-semibold text-sm line-clamp-1">{item.post.embed.external.title}</div>
+                      {#if item.post.embed.external.description}
+                        <div class="text-gray-400 text-xs mt-1 line-clamp-2">{item.post.embed.external.description}</div>
+                      {/if}
+                      <div class="text-gray-500 text-xs mt-1 truncate">{item.post.embed.external.uri}</div>
+                    </div>
+                  </a>
+                {/if}
+
                 {#if item.post.embed.$type === 'app.bsky.embed.record#view' && item.post.embed.record && !item.post.embed.record.notFound}
                   {@const quotedPost = item.post.embed.record}
                   <div class="mt-3 border border-gray-600 rounded-lg p-3">
@@ -455,6 +474,59 @@
                       {@html escapeHtml(quotedPost.value.text || '').replace(/\n/g, '<br>')}
                     </div>
                   </div>
+                {/if}
+
+                {#if item.post.embed.$type === 'app.bsky.embed.recordWithMedia#view'}
+                  {#if item.post.embed.media?.$type === 'app.bsky.embed.external#view' && item.post.embed.media.external}
+                    <a href={item.post.embed.media.external.uri} target="_blank" rel="noopener noreferrer" class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
+                      {#if item.post.embed.media.external.thumb}
+                        <img
+                          src={item.post.embed.media.external.thumb}
+                          alt={item.post.embed.media.external.title}
+                          class="w-full h-48 object-cover bg-gray-700"
+                        />
+                      {/if}
+                      <div class="p-3 bg-gray-800">
+                        <div class="text-white font-semibold text-sm line-clamp-1">{item.post.embed.media.external.title}</div>
+                        {#if item.post.embed.media.external.description}
+                          <div class="text-gray-400 text-xs mt-1 line-clamp-2">{item.post.embed.media.external.description}</div>
+                        {/if}
+                        <div class="text-gray-500 text-xs mt-1 truncate">{item.post.embed.media.external.uri}</div>
+                      </div>
+                    </a>
+                  {/if}
+
+                  {#if item.post.embed.media?.images}
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {#each item.post.embed.media.images as img}
+                        <a href={img.fullsize} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={img.thumb}
+                            alt={img.alt || 'Embedded image'}
+                            class="rounded-lg w-full h-auto object-cover border border-gray-600"
+                          />
+                        </a>
+                      {/each}
+                    </div>
+                  {/if}
+
+                  {#if item.post.embed.record?.record && !item.post.embed.record.record.notFound}
+                    {@const quotedPost = item.post.embed.record.record}
+                    <div class="mt-3 border border-gray-600 rounded-lg p-3">
+                      <div class="flex items-center space-x-2 text-sm text-gray-400">
+                        <img
+                          src={quotedPost.author.avatar || 'https://placehold.co/24x24/1a202c/ffffff?text=?'}
+                          class="w-6 h-6 rounded-full bg-gray-600"
+                          alt={quotedPost.author.displayName}
+                        />
+                        <span class="font-bold text-white">{quotedPost.author.displayName || quotedPost.author.handle}</span>
+                        <span class="truncate">@{quotedPost.author.handle}</span>
+                      </div>
+                      <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
+                        {@html escapeHtml(quotedPost.value.text || '').replace(/\n/g, '<br>')}
+                      </div>
+                    </div>
+                  {/if}
                 {/if}
               {/if}
             </div>
