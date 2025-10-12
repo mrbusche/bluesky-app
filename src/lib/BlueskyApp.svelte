@@ -283,6 +283,39 @@
       isFollowing = false;
     }
   }
+
+  async function toggleLike(postUri, postCid, postIndex) {
+    if (!session) return;
+
+    const post = posts[postIndex].post;
+    const isLiked = post.viewer?.like;
+
+    try {
+      if (isLiked) {
+        // Unlike the post
+        await agent.deleteLike(post.viewer.like);
+        // Update the post to reflect the unlike
+        posts[postIndex].post = {
+          ...post,
+          likeCount: (post.likeCount || 1) - 1,
+          viewer: { ...post.viewer, like: undefined }
+        };
+      } else {
+        // Like the post
+        const response = await agent.like(postUri, postCid);
+        // Update the post to reflect the like
+        posts[postIndex].post = {
+          ...post,
+          likeCount: (post.likeCount || 0) + 1,
+          viewer: { ...post.viewer, like: response.uri }
+        };
+      }
+      // Trigger reactivity
+      posts = posts;
+    } catch (error) {
+      console.error('Like/unlike error:', error);
+    }
+  }
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -457,6 +490,19 @@
                   </div>
                 {/if}
               {/if}
+
+              <div class="flex items-center space-x-4 mt-3 text-gray-400">
+                <button
+                  on:click={() => toggleLike(item.post.uri, item.post.cid, posts.indexOf(item))}
+                  class="flex items-center space-x-1 hover:text-red-400 transition-colors"
+                  aria-label={item.post.viewer?.like ? 'Unlike post' : 'Like post'}
+                >
+                  <span class="text-lg">{item.post.viewer?.like ? '❤️' : '🤍'}</span>
+                  {#if item.post.likeCount > 0}
+                    <span class="text-sm">{item.post.likeCount}</span>
+                  {/if}
+                </button>
+              </div>
             </div>
           </article>
         {/each}
