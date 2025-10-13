@@ -202,6 +202,59 @@
     return unsafe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   };
 
+  const renderTextWithLinks = (text, facets) => {
+    if (!text) return '';
+    if (!facets || facets.length === 0) {
+      return escapeHtml(text).replace(/\n/g, '<br>');
+    }
+
+    // Convert text to UTF-8 bytes for proper indexing
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const bytes = encoder.encode(text);
+    
+    // Sort facets by index to process them in order
+    const sortedFacets = [...facets].sort((a, b) => a.index.byteStart - b.index.byteStart);
+    
+    let result = '';
+    let lastIndex = 0;
+    
+    for (const facet of sortedFacets) {
+      const { byteStart, byteEnd } = facet.index;
+      
+      // Add text before this facet
+      if (byteStart > lastIndex) {
+        const beforeBytes = bytes.slice(lastIndex, byteStart);
+        const beforeText = decoder.decode(beforeBytes);
+        result += escapeHtml(beforeText);
+      }
+      
+      // Extract the facet text
+      const facetBytes = bytes.slice(byteStart, byteEnd);
+      const facetText = decoder.decode(facetBytes);
+      
+      // Check if this facet is a link
+      const linkFeature = facet.features?.find(f => f.$type === 'app.bsky.richtext.facet#link');
+      if (linkFeature && linkFeature.uri) {
+        result += `<a href="${escapeHtml(linkFeature.uri)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${escapeHtml(facetText)}</a>`;
+      } else {
+        // For mentions and other facets, just render as text for now
+        result += escapeHtml(facetText);
+      }
+      
+      lastIndex = byteEnd;
+    }
+    
+    // Add remaining text after last facet
+    if (lastIndex < bytes.length) {
+      const afterBytes = bytes.slice(lastIndex);
+      const afterText = decoder.decode(afterBytes);
+      result += escapeHtml(afterText);
+    }
+    
+    return result.replace(/\n/g, '<br>');
+  };
+
   const formatPostDate = (dateString) => {
     const postDate = new Date(dateString);
     const now = new Date();
@@ -422,7 +475,7 @@
                 <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
               </div>
               <div class="text-white mt-1 whitespace-pre-wrap break-words">
-                {@html escapeHtml(item.post.record.text || '').replace(/\n/g, '<br>')}
+                {@html renderTextWithLinks(item.post.record.text, item.post.record.facets)}
               </div>
 
               {#if item.post.embed}
@@ -472,7 +525,7 @@
                       <span class="truncate">@{quotedPost.author.handle}</span>
                     </div>
                     <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
-                      {@html escapeHtml(quotedPost.value.text || '').replace(/\n/g, '<br>')}
+                      {@html renderTextWithLinks(quotedPost.value.text, quotedPost.value.facets)}
                     </div>
                   </div>
                 {/if}
@@ -524,7 +577,7 @@
                         <span class="truncate">@{quotedPost.author.handle}</span>
                       </div>
                       <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
-                        {@html escapeHtml(quotedPost.value.text || '').replace(/\n/g, '<br>')}
+                        {@html renderTextWithLinks(quotedPost.value.text, quotedPost.value.facets)}
                       </div>
                     </div>
                   {/if}
