@@ -69,6 +69,7 @@
         localStorage.setItem(SESSION_KEY, JSON.stringify(agent.session));
         session = agent.session;
         await fetchTimeline();
+        await restoreScrollPosition();
       } else {
         throw new Error('Login failed. Please check your handle and password.');
       }
