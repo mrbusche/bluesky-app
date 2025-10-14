@@ -1,6 +1,7 @@
 <script>
   import { onMount, tick } from 'svelte';
   import VideoPlayer from './VideoPlayer.svelte';
+  import UserProfileModal from './UserProfileModal.svelte';
 
   // Import the official Bluesky SDK
   import { AtpAgent } from '@atproto/api';
@@ -21,12 +22,9 @@
   let handle = '';
   let password = '';
 
-  // Profile view state
+  // Profile view state (refactored)
   let showProfile = false;
-  let profileData = null;
-  let isLoadingProfile = false;
-  let profileError = '';
-  let isFollowing = false;
+  let profileHandle = '';
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -278,65 +276,13 @@
     }
   };
 
-  async function showUserProfile(userHandle) {
+  function showUserProfile(userHandle) {
+    profileHandle = userHandle;
     showProfile = true;
-    isLoadingProfile = true;
-    profileError = '';
-    profileData = null;
-
-    try {
-      const response = await agent.getProfile({ actor: userHandle });
-      profileData = response.data;
-    } catch (error) {
-      console.error('Profile fetch error:', error);
-      profileError = error.message || 'Failed to load profile.';
-    } finally {
-      isLoadingProfile = false;
-    }
   }
-
   function closeProfile() {
     showProfile = false;
-    profileData = null;
-    profileError = '';
-  }
-
-  async function followFromProfile() {
-    if (!profileData || !session) return;
-
-    isFollowing = true;
-
-    try {
-      await agent.follow(profileData.did);
-      // Update the profile data to reflect the follow
-      if (profileData) {
-        profileData.viewer = { ...profileData.viewer, following: true };
-      }
-    } catch (error) {
-      console.error('Follow error:', error);
-      profileError = error.message || 'Failed to follow user.';
-    } finally {
-      isFollowing = false;
-    }
-  }
-
-  async function unfollowFromProfile() {
-    if (!profileData || !session || !profileData.viewer?.following) return;
-
-    isFollowing = true;
-
-    try {
-      await agent.deleteFollow(profileData.viewer.following);
-      // Update the profile data to reflect the unfollow
-      if (profileData) {
-        profileData.viewer = { ...profileData.viewer, following: undefined };
-      }
-    } catch (error) {
-      console.error('Unfollow error:', error);
-      profileError = error.message || 'Failed to unfollow user.';
-    } finally {
-      isFollowing = false;
-    }
+    profileHandle = '';
   }
 
   async function toggleLike(postUri, postCid, postIndex) {
@@ -384,95 +330,7 @@
   </div>
 {/if}
 
-{#if showProfile}
-  <div
-    class="fixed inset-0 bg-black bg-opacity-75 z-30 flex items-center justify-center p-4"
-    role="button"
-    tabindex="0"
-    aria-label="Close profile overlay"
-    on:click|self={closeProfile}
-    on:keydown={(e) => {
-      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        closeProfile();
-      }
-    }}
-  >
-    <div
-      class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="profile-dialog-title"
-    >
-      <div class="flex justify-between items-start mb-4">
-        <h2 id="profile-dialog-title" class="text-xl font-bold text-blue-400">Profile</h2>
-        <button on:click={closeProfile} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
-      </div>
-
-      {#if isLoadingProfile}
-        <div class="flex justify-center items-center py-8">
-          <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      {:else if profileError}
-        <p class="text-red-400 text-center py-4">{profileError}</p>
-      {:else if profileData}
-        <div class="space-y-4">
-          <div class="flex items-center space-x-4">
-            <img
-              src={profileData.avatar || 'https://placehold.co/64x64/1a202c/ffffff?text=?'}
-              alt={profileData.displayName}
-              class="w-16 h-16 rounded-full bg-gray-600"
-            />
-            <div class="flex-1">
-              <h3 class="font-bold text-white text-lg">{profileData.displayName || profileData.handle}</h3>
-              <p class="text-gray-400 text-sm">@{profileData.handle}</p>
-            </div>
-          </div>
-
-          {#if profileData.description}
-            <p class="text-white whitespace-pre-wrap break-words">{profileData.description}</p>
-          {/if}
-
-          <div class="flex space-x-4 text-sm text-gray-400">
-            <span><strong class="text-white">{profileData.followersCount || 0}</strong> followers</span>
-            <span><strong class="text-white">{profileData.followsCount || 0}</strong> following</span>
-            <span><strong class="text-white">{profileData.postsCount || 0}</strong> posts</span>
-          </div>
-
-          {#if !profileData.viewer?.following}
-            <button
-              on:click={followFromProfile}
-              disabled={isFollowing}
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-blue-800 disabled:cursor-not-allowed"
-            >
-              {#if isFollowing}
-                Following...
-              {:else}
-                Follow
-              {/if}
-            </button>
-          {:else}
-            <button
-              on:click={unfollowFromProfile}
-              disabled={isFollowing}
-              class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-green-800 disabled:cursor-not-allowed"
-            >
-              {#if isFollowing}
-                Unfollowing...
-              {:else}
-                Following
-              {/if}
-            </button>
-          {/if}
-
-          {#if profileError}
-            <p class="text-red-400 text-sm text-center">{profileError}</p>
-          {/if}
-        </div>
-      {/if}
-    </div>
-  </div>
-{/if}
+<UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} on:close={closeProfile} />
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
