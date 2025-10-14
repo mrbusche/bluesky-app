@@ -86,7 +86,19 @@
       const response = await agent.getTimeline(params);
 
       if (response.data.feed.length > 0) {
-        const newPosts = response.data.feed.filter((item) => item.post && !item.post.record.reply);
+        // Filter out replies that are not self-replies (threaded posts)
+        const newPosts = response.data.feed.filter((item) => {
+          if (!item.post) return false;
+          // If there's no reply field, it's a top-level post - include it
+          if (!item.post.record.reply) return true;
+          // If there is a reply field, only include it if it's a self-reply (threaded post)
+          // by checking if the post author matches the reply parent author
+          if (item.reply && item.reply.parent) {
+            return item.post.author.did === item.reply.parent.author?.did;
+          }
+          // If we can't determine, exclude it to avoid clutter
+          return false;
+        });
         posts = [...posts, ...newPosts];
         timelineCursor = response.data.cursor;
       } else {
