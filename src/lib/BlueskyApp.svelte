@@ -1,5 +1,6 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import Hls from 'hls.js';
 
   // Import the official Bluesky SDK
   import { AtpAgent } from '@atproto/api';
@@ -370,6 +371,33 @@
       console.error('Like/unlike error:', error);
     }
   }
+
+  function initializeVideoPlayer(videoElement, playlistUrl) {
+    if (!videoElement || !playlistUrl) return;
+
+    // Check if HLS is supported natively (Safari)
+    if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+      videoElement.src = playlistUrl;
+    } 
+    // Check if HLS.js is supported (most other browsers)
+    else if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+      });
+      hls.loadSource(playlistUrl);
+      hls.attachMedia(videoElement);
+      
+      // Clean up on element removal
+      return () => {
+        hls.destroy();
+      };
+    }
+    // Fallback - try setting src directly
+    else {
+      videoElement.src = playlistUrl;
+    }
+  }
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -541,15 +569,13 @@
                 {#if item.post.embed.$type === 'app.bsky.embed.video#view' && item.post.embed.playlist}
                   <div class="mt-3">
                     <video
+                      use:initializeVideoPlayer={item.post.embed.playlist}
                       controls
                       poster={item.post.embed.thumbnail}
                       class="rounded-lg w-full h-auto border border-gray-600"
                       preload="metadata"
+                      playsinline
                     >
-                      <source src={item.post.embed.playlist} type="application/x-mpegURL" />
-                      {#if item.post.embed.alt}
-                        <track kind="captions" label={item.post.embed.alt} />
-                      {/if}
                       Your browser does not support the video tag.
                     </video>
                   </div>
@@ -629,15 +655,13 @@
                   {#if item.post.embed.media?.$type === 'app.bsky.embed.video#view' && item.post.embed.media.playlist}
                     <div class="mt-3">
                       <video
+                        use:initializeVideoPlayer={item.post.embed.media.playlist}
                         controls
                         poster={item.post.embed.media.thumbnail}
                         class="rounded-lg w-full h-auto border border-gray-600"
                         preload="metadata"
+                        playsinline
                       >
-                        <source src={item.post.embed.media.playlist} type="application/x-mpegURL" />
-                        {#if item.post.embed.media.alt}
-                          <track kind="captions" label={item.post.embed.media.alt} />
-                        {/if}
                         Your browser does not support the video tag.
                       </video>
                     </div>
