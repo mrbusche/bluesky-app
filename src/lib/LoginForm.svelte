@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import Link from './Link.svelte';
 
   // Import the official Bluesky SDK
   import { AtpAgent } from '@atproto/api';
@@ -70,12 +71,7 @@
           required
         />
         <p class="text-xs text-gray-500 mt-2">
-          Use an <a
-            href="https://bsky.app/settings/app-passwords"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-blue-400 hover:underline">App Password</a
-          > for security.
+          Use an <Link href="https://bsky.app/settings/app-passwords" class="text-blue-400 hover:underline">App Password</Link> for security.
         </p>
       </div>
       <button
