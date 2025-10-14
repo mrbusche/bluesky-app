@@ -93,8 +93,8 @@
           if (!item.post.record.reply) return true;
           // If there is a reply field, only include it if it's a self-reply (threaded post)
           // by checking if the post author matches the reply parent author
-          if (item.reply && item.reply.parent) {
-            return item.post.author.did === item.reply.parent.author?.did;
+          if (item.reply?.parent?.author?.did) {
+            return item.post.author.did === item.reply.parent.author.did;
           }
           // If we can't determine, exclude it to avoid clutter
           return false;
@@ -365,6 +365,12 @@
                   <span>🔁</span>
                   <span>Reposted by</span>
                   <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
+                </div>
+              {/if}
+              {#if item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did}
+                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+                  <span>🧵</span>
+                  <span>Thread</span>
                 </div>
               {/if}
               <div class="flex items-center justify-between text-gray-400">
