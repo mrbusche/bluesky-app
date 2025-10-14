@@ -41,13 +41,22 @@
   }
 
   async function follow() {
-    if (!profile || !session) return;
+    if (!profile || !session || !agent) return;
     error = '';
     isFollowing = true;
     try {
-      const response = await agent.follow(profile.did);
-      profile = { ...profile, viewer: { ...profile.viewer, following: response.uri } };
+      const { uri } = await agent.follow(profile.did);
+      profile = {
+        ...profile,
+        viewer: { ...(profile.viewer ?? {}), following: uri }
+      };
     } catch (e) {
+      console.error('Follow error:', e);
+      error = e?.message || 'Failed to follow user.';
+    } finally {
+      isFollowing = false;
+    }
+  }
       console.error('Follow error:', e);
       error = e?.message || 'Failed to follow user.';
     } finally {
