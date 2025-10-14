@@ -86,7 +86,20 @@
       const response = await agent.getTimeline(params);
 
       if (response.data.feed.length > 0) {
-        const newPosts = response.data.feed.filter((item) => item.post && !item.post.record.reply);
+        // Filter out replies that are not self-replies (threaded posts)
+        const newPosts = response.data.feed.filter((item) => {
+          if (!item.post) return false;
+          // If there's no reply field, it's a top-level post - include it
+          if (!item.post.record.reply) return true;
+          // If there is a reply field, only include it if it's a self-reply (threaded post)
+          // by checking if the post author matches the reply parent author
+          const parentAuthorDid = item.reply?.parent?.author?.did;
+          if (parentAuthorDid !== null && parentAuthorDid !== undefined) {
+            return item.post.author.did === parentAuthorDid;
+          }
+          // If we can't determine, exclude it to avoid clutter
+          return false;
+        });
         posts = [...posts, ...newPosts];
         timelineCursor = response.data.cursor;
       } else {
@@ -353,6 +366,12 @@
                   <span>🔁</span>
                   <span>Reposted by</span>
                   <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
+                </div>
+              {/if}
+              {#if item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did}
+                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+                  <span>🧵</span>
+                  <span>Thread</span>
                 </div>
               {/if}
               <div class="flex items-center justify-between text-gray-400">
