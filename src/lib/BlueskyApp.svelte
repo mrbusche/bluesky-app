@@ -1,6 +1,6 @@
 <script>
   import { onMount, tick } from 'svelte';
-  import Hls from 'hls.js';
+  import VideoPlayer from './VideoPlayer.svelte';
 
   // Import the official Bluesky SDK
   import { AtpAgent } from '@atproto/api';
@@ -213,46 +213,46 @@
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     const bytes = encoder.encode(text);
-    
+
     // Sort facets by index to process them in order
     const sortedFacets = [...facets].sort((a, b) => a.index.byteStart - b.index.byteStart);
-    
+
     let result = '';
     let lastIndex = 0;
-    
+
     for (const facet of sortedFacets) {
       const { byteStart, byteEnd } = facet.index;
-      
+
       // Add text before this facet
       if (byteStart > lastIndex) {
         const beforeBytes = bytes.slice(lastIndex, byteStart);
         const beforeText = decoder.decode(beforeBytes);
         result += escapeHtml(beforeText);
       }
-      
+
       // Extract the facet text
       const facetBytes = bytes.slice(byteStart, byteEnd);
       const facetText = decoder.decode(facetBytes);
-      
+
       // Check if this facet is a link
-      const linkFeature = facet.features?.find(f => f.$type === 'app.bsky.richtext.facet#link');
+      const linkFeature = facet.features?.find((f) => f.$type === 'app.bsky.richtext.facet#link');
       if (linkFeature && linkFeature.uri) {
         result += `<a href="${escapeHtml(linkFeature.uri)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${escapeHtml(facetText)}</a>`;
       } else {
         // For mentions and other facets, just render as text for now
         result += escapeHtml(facetText);
       }
-      
+
       lastIndex = byteEnd;
     }
-    
+
     // Add remaining text after last facet
     if (lastIndex < bytes.length) {
       const afterBytes = bytes.slice(lastIndex);
       const afterText = decoder.decode(afterBytes);
       result += escapeHtml(afterText);
     }
-    
+
     return result.replace(/\n/g, '<br>');
   };
 
@@ -303,7 +303,7 @@
 
   async function followFromProfile() {
     if (!profileData || !session) return;
-    
+
     isFollowing = true;
 
     try {
@@ -322,7 +322,7 @@
 
   async function unfollowFromProfile() {
     if (!profileData || !session || !profileData.viewer?.following) return;
-    
+
     isFollowing = true;
 
     try {
@@ -353,7 +353,7 @@
         posts[postIndex].post = {
           ...post,
           likeCount: (post.likeCount || 1) - 1,
-          viewer: { ...post.viewer, like: undefined }
+          viewer: { ...post.viewer, like: undefined },
         };
       } else {
         // Like the post
@@ -362,7 +362,7 @@
         posts[postIndex].post = {
           ...post,
           likeCount: (post.likeCount || 0) + 1,
-          viewer: { ...post.viewer, like: response.uri }
+          viewer: { ...post.viewer, like: response.uri },
         };
       }
       // Trigger reactivity
@@ -372,32 +372,7 @@
     }
   }
 
-  function initializeVideoPlayer(videoElement, playlistUrl) {
-    if (!videoElement || !playlistUrl) return;
-
-    // Check if HLS is supported natively (Safari)
-    if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-      videoElement.src = playlistUrl;
-    } 
-    // Check if HLS.js is supported (most other browsers)
-    else if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-      });
-      hls.loadSource(playlistUrl);
-      hls.attachMedia(videoElement);
-      
-      // Clean up on element removal
-      return () => {
-        hls.destroy();
-      };
-    }
-    // Fallback - try setting src directly
-    else {
-      videoElement.src = playlistUrl;
-    }
-  }
+  // Video rendering handled by <VideoPlayer /> component
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -410,11 +385,28 @@
 {/if}
 
 {#if showProfile}
-  <div class="fixed inset-0 bg-black bg-opacity-75 z-30 flex items-center justify-center p-4" on:click={closeProfile}>
-    <div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6" on:click|stopPropagation>
+  <div
+    class="fixed inset-0 bg-black bg-opacity-75 z-30 flex items-center justify-center p-4"
+    role="button"
+    tabindex="0"
+    aria-label="Close profile overlay"
+    on:click|self={closeProfile}
+    on:keydown={(e) => {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        closeProfile();
+      }
+    }}
+  >
+    <div
+      class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-dialog-title"
+    >
       <div class="flex justify-between items-start mb-4">
-        <h2 class="text-xl font-bold text-blue-400">Profile</h2>
-        <button on:click={closeProfile} class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+        <h2 id="profile-dialog-title" class="text-xl font-bold text-blue-400">Profile</h2>
+        <button on:click={closeProfile} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
       </div>
 
       {#if isLoadingProfile}
@@ -521,13 +513,13 @@
               {/if}
               <div class="flex items-center justify-between text-gray-400">
                 <div class="flex items-center space-x-2">
-                  <button 
+                  <button
                     on:click={() => showUserProfile(item.post.author.handle)}
                     class="font-bold text-white truncate hover:underline cursor-pointer"
                   >
                     {item.post.author.displayName || item.post.author.handle}
                   </button>
-                  <button 
+                  <button
                     on:click={() => showUserProfile(item.post.author.handle)}
                     class="text-sm truncate hidden sm:inline hover:underline cursor-pointer"
                   >
@@ -568,21 +560,21 @@
 
                 {#if item.post.embed.$type === 'app.bsky.embed.video#view' && item.post.embed.playlist}
                   <div class="mt-3">
-                    <video
-                      use:initializeVideoPlayer={item.post.embed.playlist}
-                      controls
+                    <VideoPlayer
+                      playlist={item.post.embed.playlist}
                       poster={item.post.embed.thumbnail}
                       class="rounded-lg w-full h-auto border border-gray-600"
-                      preload="metadata"
-                      playsinline
-                    >
-                      Your browser does not support the video tag.
-                    </video>
+                    />
                   </div>
                 {/if}
 
                 {#if item.post.embed.$type === 'app.bsky.embed.external#view' && item.post.embed.external}
-                  <a href={item.post.embed.external.uri} target="_blank" rel="noopener noreferrer" class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
+                  <a
+                    href={item.post.embed.external.uri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
+                  >
                     {#if item.post.embed.external.thumb}
                       <img
                         src={item.post.embed.external.thumb}
@@ -615,21 +607,16 @@
                     <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
                       {@html renderTextWithLinks(quotedPost.value.text, quotedPost.value.facets)}
                     </div>
-                    
+
                     {#if quotedPost.embeds && quotedPost.embeds.length > 0}
                       {#each quotedPost.embeds as embed}
                         {#if embed.$type === 'app.bsky.embed.video#view' && embed.playlist}
                           <div class="mt-2">
-                            <video
-                              use:initializeVideoPlayer={embed.playlist}
-                              controls
+                            <VideoPlayer
+                              playlist={embed.playlist}
                               poster={embed.thumbnail}
                               class="rounded-lg w-full h-auto border border-gray-600"
-                              preload="metadata"
-                              playsinline
-                            >
-                              Your browser does not support the video tag.
-                            </video>
+                            />
                           </div>
                         {/if}
                         {#if embed.images}
@@ -650,7 +637,12 @@
 
                 {#if item.post.embed.$type === 'app.bsky.embed.recordWithMedia#view'}
                   {#if item.post.embed.media?.$type === 'app.bsky.embed.external#view' && item.post.embed.media.external}
-                    <a href={item.post.embed.media.external.uri} target="_blank" rel="noopener noreferrer" class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
+                    <a
+                      href={item.post.embed.media.external.uri}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
+                    >
                       {#if item.post.embed.media.external.thumb}
                         <img
                           src={item.post.embed.media.external.thumb}
@@ -684,16 +676,11 @@
 
                   {#if item.post.embed.media?.$type === 'app.bsky.embed.video#view' && item.post.embed.media.playlist}
                     <div class="mt-3">
-                      <video
-                        use:initializeVideoPlayer={item.post.embed.media.playlist}
-                        controls
+                      <VideoPlayer
+                        playlist={item.post.embed.media.playlist}
                         poster={item.post.embed.media.thumbnail}
                         class="rounded-lg w-full h-auto border border-gray-600"
-                        preload="metadata"
-                        playsinline
-                      >
-                        Your browser does not support the video tag.
-                      </video>
+                      />
                     </div>
                   {/if}
 
@@ -712,21 +699,16 @@
                       <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
                         {@html renderTextWithLinks(quotedPost.value.text, quotedPost.value.facets)}
                       </div>
-                      
+
                       {#if quotedPost.embeds && quotedPost.embeds.length > 0}
                         {#each quotedPost.embeds as embed}
                           {#if embed.$type === 'app.bsky.embed.video#view' && embed.playlist}
                             <div class="mt-2">
-                              <video
-                                use:initializeVideoPlayer={embed.playlist}
-                                controls
+                              <VideoPlayer
+                                playlist={embed.playlist}
                                 poster={embed.thumbnail}
                                 class="rounded-lg w-full h-auto border border-gray-600"
-                                preload="metadata"
-                                playsinline
-                              >
-                                Your browser does not support the video tag.
-                              </video>
+                              />
                             </div>
                           {/if}
                           {#if embed.images}
