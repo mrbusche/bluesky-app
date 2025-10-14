@@ -493,6 +493,23 @@
                   </div>
                 {/if}
 
+                {#if item.post.embed.$type === 'app.bsky.embed.video#view' && item.post.embed.playlist}
+                  <div class="mt-3">
+                    <video
+                      controls
+                      poster={item.post.embed.thumbnail}
+                      class="rounded-lg w-full h-auto border border-gray-600"
+                      preload="metadata"
+                    >
+                      <source src={item.post.embed.playlist} type="application/x-mpegURL" />
+                      {#if item.post.embed.alt}
+                        <track kind="captions" label={item.post.embed.alt} />
+                      {/if}
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                {/if}
+
                 {#if item.post.embed.$type === 'app.bsky.embed.external#view' && item.post.embed.external}
                   <a href={item.post.embed.external.uri} target="_blank" rel="noopener noreferrer" class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
                     {#if item.post.embed.external.thumb}
@@ -561,6 +578,23 @@
                           />
                         </a>
                       {/each}
+                    </div>
+                  {/if}
+
+                  {#if item.post.embed.media?.$type === 'app.bsky.embed.video#view' && item.post.embed.media.playlist}
+                    <div class="mt-3">
+                      <video
+                        controls
+                        poster={item.post.embed.media.thumbnail}
+                        class="rounded-lg w-full h-auto border border-gray-600"
+                        preload="metadata"
+                      >
+                        <source src={item.post.embed.media.playlist} type="application/x-mpegURL" />
+                        {#if item.post.embed.media.alt}
+                          <track kind="captions" label={item.post.embed.media.alt} />
+                        {/if}
+                        Your browser does not support the video tag.
+                      </video>
                     </div>
                   {/if}
 
