@@ -317,8 +317,6 @@
       console.error('Like/unlike error:', error);
     }
   }
-
-  // Video rendering handled by <VideoPlayer /> component
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
