@@ -337,6 +337,39 @@
       isFollowing = false;
     }
   }
+
+  async function toggleLike(postUri, postCid, postIndex) {
+    if (!session) return;
+
+    const post = posts[postIndex].post;
+    const isLiked = post.viewer?.like;
+
+    try {
+      if (isLiked) {
+        // Unlike the post
+        await agent.deleteLike(post.viewer.like);
+        // Update the post to reflect the unlike
+        posts[postIndex].post = {
+          ...post,
+          likeCount: (post.likeCount || 1) - 1,
+          viewer: { ...post.viewer, like: undefined }
+        };
+      } else {
+        // Like the post
+        const response = await agent.like(postUri, postCid);
+        // Update the post to reflect the like
+        posts[postIndex].post = {
+          ...post,
+          likeCount: (post.likeCount || 0) + 1,
+          viewer: { ...post.viewer, like: response.uri }
+        };
+      }
+      // Trigger reactivity
+      posts = posts;
+    } catch (error) {
+      console.error('Like/unlike error:', error);
+    }
+  }
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -458,21 +491,33 @@
                   <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
                 </div>
               {/if}
-              <div class="flex items-center space-x-2 text-gray-400">
-                <button 
-                  on:click={() => showUserProfile(item.post.author.handle)}
-                  class="font-bold text-white truncate hover:underline cursor-pointer"
+              <div class="flex items-center justify-between text-gray-400">
+                <div class="flex items-center space-x-2">
+                  <button 
+                    on:click={() => showUserProfile(item.post.author.handle)}
+                    class="font-bold text-white truncate hover:underline cursor-pointer"
+                  >
+                    {item.post.author.displayName || item.post.author.handle}
+                  </button>
+                  <button 
+                    on:click={() => showUserProfile(item.post.author.handle)}
+                    class="text-sm truncate hidden sm:inline hover:underline cursor-pointer"
+                  >
+                    @{item.post.author.handle}
+                  </button>
+                  <span class="text-gray-500">&middot;</span>
+                  <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
+                </div>
+                <button
+                  on:click={() => toggleLike(item.post.uri, item.post.cid, posts.indexOf(item))}
+                  class="flex items-center space-x-1 hover:text-red-400 transition-colors flex-shrink-0"
+                  aria-label={item.post.viewer?.like ? 'Unlike post' : 'Like post'}
                 >
-                  {item.post.author.displayName || item.post.author.handle}
+                  <span class="text-lg">{item.post.viewer?.like ? '❤️' : '🤍'}</span>
+                  {#if item.post.likeCount > 0}
+                    <span class="text-sm">{item.post.likeCount}</span>
+                  {/if}
                 </button>
-                <button 
-                  on:click={() => showUserProfile(item.post.author.handle)}
-                  class="text-sm truncate hidden sm:inline hover:underline cursor-pointer"
-                >
-                  @{item.post.author.handle}
-                </button>
-                <span class="text-gray-500">&middot;</span>
-                <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
               </div>
               <div class="text-white mt-1 whitespace-pre-wrap break-words">
                 {@html renderTextWithLinks(item.post.record.text, item.post.record.facets)}
