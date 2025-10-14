@@ -77,7 +77,7 @@
     aria-label="Close profile overlay"
     on:click|self={close}
     on:keydown={(e) => {
-      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'Escape') {
         e.preventDefault();
         close();
       }
