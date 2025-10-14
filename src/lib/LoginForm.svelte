@@ -33,8 +33,6 @@
           agent,
           session: agent.session,
         });
-      } else {
-        throw new Error('Login failed. Please check your handle and password.');
       }
     } catch (error) {
       console.error('Login error:', error);

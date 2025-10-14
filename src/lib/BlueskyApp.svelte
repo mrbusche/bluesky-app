@@ -56,8 +56,12 @@
     const { agent: newAgent, session: newSession } = event.detail;
     agent = newAgent;
     session = newSession;
-    await fetchTimeline();
-    await restoreScrollPosition();
+    try {
+      await fetchTimeline();
+      await restoreScrollPosition();
+    } catch (error) {
+      console.error('Error during login success handling:', error);
+    }
   }
 
   function handleLogout() {
