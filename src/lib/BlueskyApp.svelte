@@ -560,11 +560,7 @@
 
                 {#if item.post.embed.$type === 'app.bsky.embed.video#view' && item.post.embed.playlist}
                   <div class="mt-3">
-                    <VideoPlayer
-                      playlist={item.post.embed.playlist}
-                      poster={item.post.embed.thumbnail}
-                      class="rounded-lg w-full h-auto border border-gray-600"
-                    />
+                    <VideoPlayer playlist={item.post.embed.playlist} poster={item.post.embed.thumbnail} />
                   </div>
                 {/if}
 
@@ -612,11 +608,7 @@
                       {#each quotedPost.embeds as embed}
                         {#if embed.$type === 'app.bsky.embed.video#view' && embed.playlist}
                           <div class="mt-2">
-                            <VideoPlayer
-                              playlist={embed.playlist}
-                              poster={embed.thumbnail}
-                              class="rounded-lg w-full h-auto border border-gray-600"
-                            />
+                            <VideoPlayer playlist={embed.playlist} poster={embed.thumbnail} />
                           </div>
                         {/if}
                         {#if embed.images}
@@ -676,11 +668,7 @@
 
                   {#if item.post.embed.media?.$type === 'app.bsky.embed.video#view' && item.post.embed.media.playlist}
                     <div class="mt-3">
-                      <VideoPlayer
-                        playlist={item.post.embed.media.playlist}
-                        poster={item.post.embed.media.thumbnail}
-                        class="rounded-lg w-full h-auto border border-gray-600"
-                      />
+                      <VideoPlayer playlist={item.post.embed.media.playlist} poster={item.post.embed.media.thumbnail} />
                     </div>
                   {/if}
 
@@ -704,11 +692,7 @@
                         {#each quotedPost.embeds as embed}
                           {#if embed.$type === 'app.bsky.embed.video#view' && embed.playlist}
                             <div class="mt-2">
-                              <VideoPlayer
-                                playlist={embed.playlist}
-                                poster={embed.thumbnail}
-                                class="rounded-lg w-full h-auto border border-gray-600"
-                              />
+                              <VideoPlayer playlist={embed.playlist} poster={embed.thumbnail} />
                             </div>
                           {/if}
                           {#if embed.images}

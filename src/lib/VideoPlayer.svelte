@@ -39,9 +39,18 @@
   });
 </script>
 
-<video bind:this={videoEl} {controls} {preload} {poster} {playsinline} {muted} {autoplay} {...$$restProps}>
+<video
+  bind:this={videoEl}
+  {controls}
+  {preload}
+  {poster}
+  {playsinline}
+  {muted}
+  {autoplay}
+  {...$$restProps}
+  class="rounded-lg w-full h-auto border border-gray-600"
+>
   Your browser does not support the video tag.
-  <!-- Optional native fallback -->
   <source src={playlist} type="application/vnd.apple.mpegurl" />
   <source src={playlist} type="video/mp4" />
 </video>
