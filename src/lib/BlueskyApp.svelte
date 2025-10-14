@@ -69,6 +69,7 @@
         localStorage.setItem(SESSION_KEY, JSON.stringify(agent.session));
         session = agent.session;
         await fetchTimeline();
+        await restoreScrollPosition();
       } else {
         throw new Error('Login failed. Please check your handle and password.');
       }
@@ -199,6 +200,59 @@
   const escapeHtml = (unsafe) => {
     if (!unsafe) return '';
     return unsafe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  };
+
+  const renderTextWithLinks = (text, facets) => {
+    if (!text) return '';
+    if (!facets || facets.length === 0) {
+      return escapeHtml(text).replace(/\n/g, '<br>');
+    }
+
+    // Convert text to UTF-8 bytes for proper indexing
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const bytes = encoder.encode(text);
+    
+    // Sort facets by index to process them in order
+    const sortedFacets = [...facets].sort((a, b) => a.index.byteStart - b.index.byteStart);
+    
+    let result = '';
+    let lastIndex = 0;
+    
+    for (const facet of sortedFacets) {
+      const { byteStart, byteEnd } = facet.index;
+      
+      // Add text before this facet
+      if (byteStart > lastIndex) {
+        const beforeBytes = bytes.slice(lastIndex, byteStart);
+        const beforeText = decoder.decode(beforeBytes);
+        result += escapeHtml(beforeText);
+      }
+      
+      // Extract the facet text
+      const facetBytes = bytes.slice(byteStart, byteEnd);
+      const facetText = decoder.decode(facetBytes);
+      
+      // Check if this facet is a link
+      const linkFeature = facet.features?.find(f => f.$type === 'app.bsky.richtext.facet#link');
+      if (linkFeature && linkFeature.uri) {
+        result += `<a href="${escapeHtml(linkFeature.uri)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${escapeHtml(facetText)}</a>`;
+      } else {
+        // For mentions and other facets, just render as text for now
+        result += escapeHtml(facetText);
+      }
+      
+      lastIndex = byteEnd;
+    }
+    
+    // Add remaining text after last facet
+    if (lastIndex < bytes.length) {
+      const afterBytes = bytes.slice(lastIndex);
+      const afterText = decoder.decode(afterBytes);
+      result += escapeHtml(afterText);
+    }
+    
+    return result.replace(/\n/g, '<br>');
   };
 
   const formatPostDate = (dateString) => {
@@ -454,7 +508,7 @@
                 <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
               </div>
               <div class="text-white mt-1 whitespace-pre-wrap break-words">
-                {@html escapeHtml(item.post.record.text || '').replace(/\n/g, '<br>')}
+                {@html renderTextWithLinks(item.post.record.text, item.post.record.facets)}
               </div>
 
               {#if item.post.embed}
@@ -472,6 +526,25 @@
                   </div>
                 {/if}
 
+                {#if item.post.embed.$type === 'app.bsky.embed.external#view' && item.post.embed.external}
+                  <a href={item.post.embed.external.uri} target="_blank" rel="noopener noreferrer" class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
+                    {#if item.post.embed.external.thumb}
+                      <img
+                        src={item.post.embed.external.thumb}
+                        alt={item.post.embed.external.title}
+                        class="w-full h-48 object-cover bg-gray-700"
+                      />
+                    {/if}
+                    <div class="p-3 bg-gray-800">
+                      <div class="text-white font-semibold text-sm line-clamp-1">{item.post.embed.external.title}</div>
+                      {#if item.post.embed.external.description}
+                        <div class="text-gray-400 text-xs mt-1 line-clamp-2">{item.post.embed.external.description}</div>
+                      {/if}
+                      <div class="text-gray-500 text-xs mt-1 truncate">{item.post.embed.external.uri}</div>
+                    </div>
+                  </a>
+                {/if}
+
                 {#if item.post.embed.$type === 'app.bsky.embed.record#view' && item.post.embed.record && !item.post.embed.record.notFound}
                   {@const quotedPost = item.post.embed.record}
                   <div class="mt-3 border border-gray-600 rounded-lg p-3">
@@ -485,9 +558,62 @@
                       <span class="truncate">@{quotedPost.author.handle}</span>
                     </div>
                     <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
-                      {@html escapeHtml(quotedPost.value.text || '').replace(/\n/g, '<br>')}
+                      {@html renderTextWithLinks(quotedPost.value.text, quotedPost.value.facets)}
                     </div>
                   </div>
+                {/if}
+
+                {#if item.post.embed.$type === 'app.bsky.embed.recordWithMedia#view'}
+                  {#if item.post.embed.media?.$type === 'app.bsky.embed.external#view' && item.post.embed.media.external}
+                    <a href={item.post.embed.media.external.uri} target="_blank" rel="noopener noreferrer" class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
+                      {#if item.post.embed.media.external.thumb}
+                        <img
+                          src={item.post.embed.media.external.thumb}
+                          alt={item.post.embed.media.external.title}
+                          class="w-full h-48 object-cover bg-gray-700"
+                        />
+                      {/if}
+                      <div class="p-3 bg-gray-800">
+                        <div class="text-white font-semibold text-sm line-clamp-1">{item.post.embed.media.external.title}</div>
+                        {#if item.post.embed.media.external.description}
+                          <div class="text-gray-400 text-xs mt-1 line-clamp-2">{item.post.embed.media.external.description}</div>
+                        {/if}
+                        <div class="text-gray-500 text-xs mt-1 truncate">{item.post.embed.media.external.uri}</div>
+                      </div>
+                    </a>
+                  {/if}
+
+                  {#if item.post.embed.media?.images}
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {#each item.post.embed.media.images as img}
+                        <a href={img.fullsize} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={img.thumb}
+                            alt={img.alt || 'Embedded image'}
+                            class="rounded-lg w-full h-auto object-cover border border-gray-600"
+                          />
+                        </a>
+                      {/each}
+                    </div>
+                  {/if}
+
+                  {#if item.post.embed.record?.record && !item.post.embed.record.record.notFound}
+                    {@const quotedPost = item.post.embed.record.record}
+                    <div class="mt-3 border border-gray-600 rounded-lg p-3">
+                      <div class="flex items-center space-x-2 text-sm text-gray-400">
+                        <img
+                          src={quotedPost.author.avatar || 'https://placehold.co/24x24/1a202c/ffffff?text=?'}
+                          class="w-6 h-6 rounded-full bg-gray-600"
+                          alt={quotedPost.author.displayName}
+                        />
+                        <span class="font-bold text-white">{quotedPost.author.displayName || quotedPost.author.handle}</span>
+                        <span class="truncate">@{quotedPost.author.handle}</span>
+                      </div>
+                      <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
+                        {@html renderTextWithLinks(quotedPost.value.text, quotedPost.value.facets)}
+                      </div>
+                    </div>
+                  {/if}
                 {/if}
               {/if}
 
