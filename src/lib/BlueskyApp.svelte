@@ -22,7 +22,7 @@
   let handle = '';
   let password = '';
 
-  // Profile view state (refactored)
+  // Profile view state
   let showProfile = false;
   let profileHandle = '';
 
