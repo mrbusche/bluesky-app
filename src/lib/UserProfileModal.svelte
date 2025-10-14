@@ -94,66 +94,70 @@
         <button on:click={close} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
       </div>
 
+++ b/src/lib/UserProfileModal.svelte
+@@ (lines 97-157)
       {#if isLoading}
-        <div class="flex justify-center items-center py-8">
-          <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-        </div>
+         <div class="flex justify-center items-center py-8">
+           <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+         </div>
+-      {:else if error}
+-        <p class="text-red-400 text-center py-4">{error}</p>
+      {:else if profile}
+         <div class="space-y-4">
+           <div class="flex items-center space-x-4">
+             <img
+               src={profile.avatar || 'https://placehold.co/64x64/1a202c/ffffff?text=?'}
+               alt={profile.displayName}
+               class="w-16 h-16 rounded-full bg-gray-600"
+             />
+             <div class="flex-1">
+               <h3 class="font-bold text-white text-lg">{profile.displayName || profile.handle}</h3>
+               <p class="text-gray-400 text-sm">@{profile.handle}</p>
+             </div>
+           </div>
+
+           {#if profile.description}
+             <p class="text-white whitespace-pre-wrap break-words">{profile.description}</p>
+           {/if}
+
+           <div class="flex space-x-4 text-sm text-gray-400">
+             <span><strong class="text-white">{profile.followersCount || 0}</strong> followers</span>
+             <span><strong class="text-white">{profile.followsCount || 0}</strong> following</span>
+             <span><strong class="text-white">{profile.postsCount || 0}</strong> posts</span>
+           </div>
+
+           {#if !profile.viewer?.following}
+             <button
+               on:click={follow}
+               disabled={isFollowing}
+               class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-blue-800 disabled:cursor-not-allowed"
+             >
+               {#if isFollowing}
+                 Following...
+               {:else}
+                 Follow
+               {/if}
+             </button>
+           {:else}
+             <button
+               on:click={unfollow}
+               disabled={isFollowing}
+               class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-green-800 disabled:cursor-not-allowed"
+             >
+               {#if isFollowing}
+                 Unfollowing...
+               {:else}
+                 Following
+               {/if}
+             </button>
+           {/if}
+
+           {#if error}
+             <p class="text-red-400 text-sm text-center">{error}</p>
+           {/if}
+         </div>
       {:else if error}
         <p class="text-red-400 text-center py-4">{error}</p>
-      {:else if profile}
-        <div class="space-y-4">
-          <div class="flex items-center space-x-4">
-            <img
-              src={profile.avatar || 'https://placehold.co/64x64/1a202c/ffffff?text=?'}
-              alt={profile.displayName}
-              class="w-16 h-16 rounded-full bg-gray-600"
-            />
-            <div class="flex-1">
-              <h3 class="font-bold text-white text-lg">{profile.displayName || profile.handle}</h3>
-              <p class="text-gray-400 text-sm">@{profile.handle}</p>
-            </div>
-          </div>
-
-          {#if profile.description}
-            <p class="text-white whitespace-pre-wrap break-words">{profile.description}</p>
-          {/if}
-
-          <div class="flex space-x-4 text-sm text-gray-400">
-            <span><strong class="text-white">{profile.followersCount || 0}</strong> followers</span>
-            <span><strong class="text-white">{profile.followsCount || 0}</strong> following</span>
-            <span><strong class="text-white">{profile.postsCount || 0}</strong> posts</span>
-          </div>
-
-          {#if !profile.viewer?.following}
-            <button
-              on:click={follow}
-              disabled={isFollowing}
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-blue-800 disabled:cursor-not-allowed"
-            >
-              {#if isFollowing}
-                Following...
-              {:else}
-                Follow
-              {/if}
-            </button>
-          {:else}
-            <button
-              on:click={unfollow}
-              disabled={isFollowing}
-              class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-green-800 disabled:cursor-not-allowed"
-            >
-              {#if isFollowing}
-                Unfollowing...
-              {:else}
-                Following
-              {/if}
-            </button>
-          {/if}
-
-          {#if error}
-            <p class="text-red-400 text-sm text-center">{error}</p>
-          {/if}
-        </div>
       {/if}
     </div>
   </div>
