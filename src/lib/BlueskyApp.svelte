@@ -1,5 +1,6 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import Hls from 'hls.js';
 
   // Import the official Bluesky SDK
   import { AtpAgent } from '@atproto/api';
@@ -370,6 +371,33 @@
       console.error('Like/unlike error:', error);
     }
   }
+
+  function initializeVideoPlayer(videoElement, playlistUrl) {
+    if (!videoElement || !playlistUrl) return;
+
+    // Check if HLS is supported natively (Safari)
+    if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+      videoElement.src = playlistUrl;
+    } 
+    // Check if HLS.js is supported (most other browsers)
+    else if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+      });
+      hls.loadSource(playlistUrl);
+      hls.attachMedia(videoElement);
+      
+      // Clean up on element removal
+      return () => {
+        hls.destroy();
+      };
+    }
+    // Fallback - try setting src directly
+    else {
+      videoElement.src = playlistUrl;
+    }
+  }
 </script>
 
 <svelte:window on:scroll={handleInfiniteScroll} />
@@ -538,6 +566,21 @@
                   </div>
                 {/if}
 
+                {#if item.post.embed.$type === 'app.bsky.embed.video#view' && item.post.embed.playlist}
+                  <div class="mt-3">
+                    <video
+                      use:initializeVideoPlayer={item.post.embed.playlist}
+                      controls
+                      poster={item.post.embed.thumbnail}
+                      class="rounded-lg w-full h-auto border border-gray-600"
+                      preload="metadata"
+                      playsinline
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                {/if}
+
                 {#if item.post.embed.$type === 'app.bsky.embed.external#view' && item.post.embed.external}
                   <a href={item.post.embed.external.uri} target="_blank" rel="noopener noreferrer" class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
                     {#if item.post.embed.external.thumb}
@@ -572,6 +615,36 @@
                     <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
                       {@html renderTextWithLinks(quotedPost.value.text, quotedPost.value.facets)}
                     </div>
+                    
+                    {#if quotedPost.embeds && quotedPost.embeds.length > 0}
+                      {#each quotedPost.embeds as embed}
+                        {#if embed.$type === 'app.bsky.embed.video#view' && embed.playlist}
+                          <div class="mt-2">
+                            <video
+                              use:initializeVideoPlayer={embed.playlist}
+                              controls
+                              poster={embed.thumbnail}
+                              class="rounded-lg w-full h-auto border border-gray-600"
+                              preload="metadata"
+                              playsinline
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        {/if}
+                        {#if embed.images}
+                          <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {#each embed.images as img}
+                              <img
+                                src={img.thumb}
+                                alt={img.alt || 'Embedded image'}
+                                class="rounded-lg w-full h-auto object-cover border border-gray-600"
+                              />
+                            {/each}
+                          </div>
+                        {/if}
+                      {/each}
+                    {/if}
                   </div>
                 {/if}
 
@@ -609,6 +682,21 @@
                     </div>
                   {/if}
 
+                  {#if item.post.embed.media?.$type === 'app.bsky.embed.video#view' && item.post.embed.media.playlist}
+                    <div class="mt-3">
+                      <video
+                        use:initializeVideoPlayer={item.post.embed.media.playlist}
+                        controls
+                        poster={item.post.embed.media.thumbnail}
+                        class="rounded-lg w-full h-auto border border-gray-600"
+                        preload="metadata"
+                        playsinline
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  {/if}
+
                   {#if item.post.embed.record?.record && !item.post.embed.record.record.notFound}
                     {@const quotedPost = item.post.embed.record.record}
                     <div class="mt-3 border border-gray-600 rounded-lg p-3">
@@ -624,6 +712,36 @@
                       <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
                         {@html renderTextWithLinks(quotedPost.value.text, quotedPost.value.facets)}
                       </div>
+                      
+                      {#if quotedPost.embeds && quotedPost.embeds.length > 0}
+                        {#each quotedPost.embeds as embed}
+                          {#if embed.$type === 'app.bsky.embed.video#view' && embed.playlist}
+                            <div class="mt-2">
+                              <video
+                                use:initializeVideoPlayer={embed.playlist}
+                                controls
+                                poster={embed.thumbnail}
+                                class="rounded-lg w-full h-auto border border-gray-600"
+                                preload="metadata"
+                                playsinline
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                            </div>
+                          {/if}
+                          {#if embed.images}
+                            <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {#each embed.images as img}
+                                <img
+                                  src={img.thumb}
+                                  alt={img.alt || 'Embedded image'}
+                                  class="rounded-lg w-full h-auto object-cover border border-gray-600"
+                                />
+                              {/each}
+                            </div>
+                          {/if}
+                        {/each}
+                      {/if}
                     </div>
                   {/if}
                 {/if}
