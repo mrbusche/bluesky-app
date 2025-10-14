@@ -413,13 +413,7 @@
                 {#if item.post.embed.images}
                   <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {#each item.post.embed.images as img}
-                      <ImageLink href={img.fullsize}>
-                        <img
-                          src={img.thumb}
-                          alt={img.alt || 'Embedded image'}
-                          class="rounded-lg w-full h-auto object-cover border border-gray-600"
-                        />
-                      </ImageLink>
+                      <ImageLink href={img.fullsize} src={img.thumb} alt={img.alt || 'Embedded image'} />
                     {/each}
                   </div>
                 {/if}
@@ -534,13 +528,7 @@
                   {#if item.post.embed.media?.images}
                     <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {#each item.post.embed.media.images as img}
-                        <ImageLink href={img.fullsize}>
-                          <img
-                            src={img.thumb}
-                            alt={img.alt || 'Embedded image'}
-                            class="rounded-lg w-full h-auto object-cover border border-gray-600"
-                          />
-                        </ImageLink>
+                        <ImageLink href={img.fullsize} src={img.thumb} alt={img.alt || 'Embedded image'} />
                       {/each}
                     </div>
                   {/if}
