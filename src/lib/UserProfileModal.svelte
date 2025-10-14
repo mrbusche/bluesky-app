@@ -44,8 +44,8 @@
     if (!profile || !session) return;
     isFollowing = true;
     try {
-      await agent.follow(profile.did);
-      profile = { ...profile, viewer: { ...profile.viewer, following: true } };
+      const response = await agent.follow(profile.did);
+      profile = { ...profile, viewer: { ...profile.viewer, following: response.uri } };
     } catch (e) {
       console.error('Follow error:', e);
       error = e?.message || 'Failed to follow user.';
