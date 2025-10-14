@@ -485,6 +485,29 @@
                             {/each}
                           </div>
                         {/if}
+                        {#if embed.$type === 'app.bsky.embed.external#view' && embed.external}
+                          <a
+                            href={embed.external.uri}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="mt-2 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
+                          >
+                            {#if embed.external.thumb}
+                              <img
+                                src={embed.external.thumb}
+                                alt={embed.external.title}
+                                class="w-full h-48 object-cover bg-gray-700"
+                              />
+                            {/if}
+                            <div class="p-3 bg-gray-800">
+                              <div class="text-white font-semibold text-sm line-clamp-1">{embed.external.title}</div>
+                              {#if embed.external.description}
+                                <div class="text-gray-400 text-xs mt-1 line-clamp-2">{embed.external.description}</div>
+                              {/if}
+                              <div class="text-gray-500 text-xs mt-1 truncate">{embed.external.uri}</div>
+                            </div>
+                          </a>
+                        {/if}
                       {/each}
                     {/if}
                   </div>
@@ -568,6 +591,29 @@
                                 />
                               {/each}
                             </div>
+                          {/if}
+                          {#if embed.$type === 'app.bsky.embed.external#view' && embed.external}
+                            <a
+                              href={embed.external.uri}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="mt-2 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
+                            >
+                              {#if embed.external.thumb}
+                                <img
+                                  src={embed.external.thumb}
+                                  alt={embed.external.title}
+                                  class="w-full h-48 object-cover bg-gray-700"
+                                />
+                              {/if}
+                              <div class="p-3 bg-gray-800">
+                                <div class="text-white font-semibold text-sm line-clamp-1">{embed.external.title}</div>
+                                {#if embed.external.description}
+                                  <div class="text-gray-400 text-xs mt-1 line-clamp-2">{embed.external.description}</div>
+                                {/if}
+                                <div class="text-gray-500 text-xs mt-1 truncate">{embed.external.uri}</div>
+                              </div>
+                            </a>
                           {/if}
                         {/each}
                       {/if}
