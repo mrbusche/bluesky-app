@@ -94,7 +94,7 @@
           // If there is a reply field, only include it if it's a self-reply (threaded post)
           // by checking if the post author matches the reply parent author
           const parentAuthorDid = item.reply?.parent?.author?.did;
-          if (parentAuthorDid != null) {
+          if (parentAuthorDid !== null && parentAuthorDid !== undefined) {
             return item.post.author.did === parentAuthorDid;
           }
           // If we can't determine, exclude it to avoid clutter
