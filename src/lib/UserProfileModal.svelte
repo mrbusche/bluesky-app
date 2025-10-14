@@ -94,14 +94,10 @@
         <button on:click={close} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
       </div>
 
-++ b/src/lib/UserProfileModal.svelte
-@@ (lines 97-157)
       {#if isLoading}
          <div class="flex justify-center items-center py-8">
            <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
          </div>
--      {:else if error}
--        <p class="text-red-400 text-center py-4">{error}</p>
       {:else if profile}
          <div class="space-y-4">
            <div class="flex items-center space-x-4">
