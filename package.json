@@ -6,6 +6,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "prettier --check .",
     "prettier:fix": "prettier --write ."
   },
@@ -14,6 +16,10 @@
     "@sveltejs/kit": "2.46.5",
     "@sveltejs/vite-plugin-svelte": "6.2.1",
     "@tailwindcss/postcss": "4.1.14",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/svelte": "^5.2.8",
+    "happy-dom": "^20.0.1",
+    "jsdom": "^27.0.0",
     "postcss": "8.5.6",
     "prettier": "3.6.2",
     "prettier-plugin-svelte": "3.4.0",
@@ -22,7 +28,8 @@
     "tailwindcss": "4.1.14",
     "tslib": "2.8.1",
     "typescript": "5.9.3",
-    "vite": "7.1.10"
+    "vite": "7.1.10",
+    "vitest": "^3.2.4"
   },
   "type": "module",
   "dependencies": {
