@@ -1,11 +1,10 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
   import Link from './Link.svelte';
 
   // Import the official Bluesky SDK
   import { AtpAgent } from '@atproto/api';
 
-  const dispatch = createEventDispatcher();
+  export let onLoginSuccess = undefined;
 
   // Form input bindings
   let handle = '';
@@ -29,11 +28,7 @@
 
       if (response.success) {
         localStorage.setItem(SESSION_KEY, JSON.stringify(agent.session));
-        // Dispatch login success event with agent and session
-        dispatch('loginSuccess', {
-          agent,
-          session: agent.session,
-        });
+        onLoginSuccess?.({ agent, session: agent.session });
       }
     } catch (error) {
       console.error('Login error:', error);

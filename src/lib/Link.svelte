@@ -1,4 +1,5 @@
 <script>
+  import { isExternalUrl } from './utils.js';
   // Reusable anchor component with sensible defaults for external links
   // Props:
   // - href: string (required)
@@ -12,9 +13,7 @@
   export let target = undefined; // string | undefined
   export let rel = undefined; // string | undefined
 
-  const isExternal = (url) => /^(https?:)?\/\//i.test(url);
-
-  $: isExt = external ?? isExternal(href);
+  $: isExt = external ?? isExternalUrl(href);
   $: resolvedTarget = target ?? (isExt ? '_blank' : undefined);
   $: resolvedRel = rel ?? (isExt ? 'noopener noreferrer' : undefined);
 </script>
