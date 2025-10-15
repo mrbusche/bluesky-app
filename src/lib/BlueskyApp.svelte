@@ -1,6 +1,8 @@
 <script>
   import { onMount, tick } from 'svelte';
   import VideoPlayer from './VideoPlayer.svelte';
+  import Link from './Link.svelte';
+  import ImageLink from './ImageLink.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
   import LoginForm from './LoginForm.svelte';
 
@@ -236,6 +238,7 @@
       // Check if this facet is a link
       const linkFeature = facet.features?.find((f) => f.$type === 'app.bsky.richtext.facet#link');
       if (linkFeature && linkFeature.uri) {
+        // Note: We output HTML here; for consistency with Link component styling, keep classes.
         result += `<a href="${escapeHtml(linkFeature.uri)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${escapeHtml(facetText)}</a>`;
       } else {
         // For mentions and other facets, just render as text for now
@@ -410,13 +413,7 @@
                 {#if item.post.embed.images}
                   <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {#each item.post.embed.images as img}
-                      <a href={img.fullsize} target="_blank" rel="noopener noreferrer">
-                        <img
-                          src={img.thumb}
-                          alt={img.alt || 'Embedded image'}
-                          class="rounded-lg w-full h-auto object-cover border border-gray-600"
-                        />
-                      </a>
+                      <ImageLink href={img.fullsize} src={img.thumb} alt={img.alt || 'Embedded image'} />
                     {/each}
                   </div>
                 {/if}
@@ -428,10 +425,8 @@
                 {/if}
 
                 {#if item.post.embed.$type === 'app.bsky.embed.external#view' && item.post.embed.external}
-                  <a
+                  <Link
                     href={item.post.embed.external.uri}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
                   >
                     {#if item.post.embed.external.thumb}
@@ -448,7 +443,7 @@
                       {/if}
                       <div class="text-gray-500 text-xs mt-1 truncate">{item.post.embed.external.uri}</div>
                     </div>
-                  </a>
+                  </Link>
                 {/if}
 
                 {#if item.post.embed.$type === 'app.bsky.embed.record#view' && item.post.embed.record && !item.post.embed.record.notFound}
@@ -486,18 +481,12 @@
                           </div>
                         {/if}
                         {#if embed.$type === 'app.bsky.embed.external#view' && embed.external}
-                          <a
+                          <Link
                             href={embed.external.uri}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             class="mt-2 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
                           >
                             {#if embed.external.thumb}
-                              <img
-                                src={embed.external.thumb}
-                                alt={embed.external.title}
-                                class="w-full h-48 object-cover bg-gray-700"
-                              />
+                              <img src={embed.external.thumb} alt={embed.external.title} class="w-full h-48 object-cover bg-gray-700" />
                             {/if}
                             <div class="p-3 bg-gray-800">
                               <div class="text-white font-semibold text-sm line-clamp-1">{embed.external.title}</div>
@@ -506,7 +495,7 @@
                               {/if}
                               <div class="text-gray-500 text-xs mt-1 truncate">{embed.external.uri}</div>
                             </div>
-                          </a>
+                          </Link>
                         {/if}
                       {/each}
                     {/if}
@@ -515,10 +504,8 @@
 
                 {#if item.post.embed.$type === 'app.bsky.embed.recordWithMedia#view'}
                   {#if item.post.embed.media?.$type === 'app.bsky.embed.external#view' && item.post.embed.media.external}
-                    <a
+                    <Link
                       href={item.post.embed.media.external.uri}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       class="mt-3 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
                     >
                       {#if item.post.embed.media.external.thumb}
@@ -535,19 +522,13 @@
                         {/if}
                         <div class="text-gray-500 text-xs mt-1 truncate">{item.post.embed.media.external.uri}</div>
                       </div>
-                    </a>
+                    </Link>
                   {/if}
 
                   {#if item.post.embed.media?.images}
                     <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {#each item.post.embed.media.images as img}
-                        <a href={img.fullsize} target="_blank" rel="noopener noreferrer">
-                          <img
-                            src={img.thumb}
-                            alt={img.alt || 'Embedded image'}
-                            class="rounded-lg w-full h-auto object-cover border border-gray-600"
-                          />
-                        </a>
+                        <ImageLink href={img.fullsize} src={img.thumb} alt={img.alt || 'Embedded image'} />
                       {/each}
                     </div>
                   {/if}
@@ -593,18 +574,12 @@
                             </div>
                           {/if}
                           {#if embed.$type === 'app.bsky.embed.external#view' && embed.external}
-                            <a
+                            <Link
                               href={embed.external.uri}
-                              target="_blank"
-                              rel="noopener noreferrer"
                               class="mt-2 block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
                             >
                               {#if embed.external.thumb}
-                                <img
-                                  src={embed.external.thumb}
-                                  alt={embed.external.title}
-                                  class="w-full h-48 object-cover bg-gray-700"
-                                />
+                                <img src={embed.external.thumb} alt={embed.external.title} class="w-full h-48 object-cover bg-gray-700" />
                               {/if}
                               <div class="p-3 bg-gray-800">
                                 <div class="text-white font-semibold text-sm line-clamp-1">{embed.external.title}</div>
@@ -613,7 +588,7 @@
                                 {/if}
                                 <div class="text-gray-500 text-xs mt-1 truncate">{embed.external.uri}</div>
                               </div>
-                            </a>
+                            </Link>
                           {/if}
                         {/each}
                       {/if}
