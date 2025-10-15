@@ -12,7 +12,7 @@
       <img
         src={quotedPost.author?.avatar || 'https://placehold.co/24x24/1a202c/ffffff?text=?'}
         class="w-6 h-6 rounded-full bg-gray-600"
-        alt={quotedPost.author?.displayName}
+        alt={quotedPost.author?.displayName || quotedPost.author?.handle}
       />
       <span class="font-bold text-white">{quotedPost.author?.displayName || quotedPost.author?.handle}</span>
       <span class="truncate">@{quotedPost.author?.handle}</span>
