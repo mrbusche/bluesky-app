@@ -1,4 +1,5 @@
 <script>
+  import { isExternalUrl } from './utils.js';
   // Anchor specialized for wrapping an image. Consumers provide src & alt; styling is encapsulated here.
   // Adds external link defaults similar to Link.svelte.
   export let href = '#';
@@ -8,9 +9,7 @@
   export let target = undefined; // string | undefined
   export let rel = undefined; // string | undefined
 
-  const isExternal = (url) => /^(https?:)?\/\//i.test(url);
-
-  $: isExt = external ?? isExternal(href);
+  $: isExt = external ?? isExternalUrl(href);
   $: resolvedTarget = target ?? (isExt ? '_blank' : undefined);
   $: resolvedRel = rel ?? (isExt ? 'noopener noreferrer' : undefined);
 
