@@ -49,8 +49,7 @@
   });
 
   // --- Core Functions ---
-  async function handleLoginSuccess(event) {
-    const { agent: newAgent, session: newSession } = event.detail;
+  async function handleLoginSuccess({ agent: newAgent, session: newSession }) {
     agent = newAgent;
     session = newSession;
     try {
@@ -230,7 +229,7 @@
   </div>
 {/if}
 
-<UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} on:close={closeProfile} />
+<UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
@@ -326,7 +325,7 @@
       {/if}
     </div>
   {:else}
-    <LoginForm on:loginSuccess={handleLoginSuccess} />
+    <LoginForm onLoginSuccess={handleLoginSuccess} />
   {/if}
 </div>
 

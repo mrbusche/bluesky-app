@@ -1,5 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { browser } from '$app/environment';
 
   export let open = false;
   export let closeOnOverlay = true;
@@ -27,26 +28,23 @@
     }
   }
 
-  let prevOpen = false;
+  // Add/remove keydown listener on mount/unmount (browser only)
   onMount(() => {
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    if (browser) {
       window.addEventListener('keydown', handleKeydown);
-      // Watch open changes in browser only
-      const observer = setInterval(() => {
-        if (open && !prevOpen) {
-          document.body.classList.add('modal-open');
-          prevOpen = true;
-        } else if (!open && prevOpen) {
-          document.body.classList.remove('modal-open');
-          prevOpen = false;
-        }
-      }, 50);
-      // Clean up
-      onDestroy(() => {
-        window.removeEventListener('keydown', handleKeydown);
-        document.body.classList.remove('modal-open');
-        clearInterval(observer);
-      });
+    }
+  });
+
+  // Keep body scroll locked in sync with `open` (browser only)
+  $: if (browser) {
+    document.body.classList.toggle('modal-open', !!open);
+  }
+
+  // Ensure cleanup on destroy in case component unmounts while open
+  onDestroy(() => {
+    if (browser) {
+      window.removeEventListener('keydown', handleKeydown);
+      document.body.classList.remove('modal-open');
     }
   });
 </script>
