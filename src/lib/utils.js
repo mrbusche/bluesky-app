@@ -36,7 +36,7 @@ export const renderTextWithLinks = (text, facets) => {
     const facetText = decoder.decode(facetBytes);
 
     const linkFeature = facet.features?.find((f) => f.$type === 'app.bsky.richtext.facet#link');
-    if (linkFeature && linkFeature.uri) {
+    if (linkFeature && linkFeature.uri && isExternalUrl(linkFeature.uri)) {
       result += `<a href="${escapeHtml(linkFeature.uri)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${escapeHtml(
         facetText,
       )}</a>`;
