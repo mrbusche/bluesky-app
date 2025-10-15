@@ -17,22 +17,41 @@
   // Constants
   const BLUESKY_SERVICE = 'https://bsky.social';
   const SESSION_KEY = 'blueskySession';
+  const LOGIN_TIMEOUT_MS = 15000; // 15 seconds timeout for login
 
   async function handleLogin() {
+    if (isLoading) return;
     isLoading = true;
     loginError = '';
 
     try {
       const agent = new AtpAgent({ service: BLUESKY_SERVICE });
-      const response = await agent.login({ identifier: handle, password });
+
+      const loginPromise = agent.login({ identifier: handle.trim(), password: password.trim() });
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('LOGIN_TIMEOUT')), LOGIN_TIMEOUT_MS));
+
+      const response = await Promise.race([loginPromise, timeoutPromise]);
 
       if (response.success) {
         localStorage.setItem(SESSION_KEY, JSON.stringify(agent.session));
         onLoginSuccess?.({ agent, session: agent.session });
+      } else {
+        loginError = 'Login failed. Please check your handle and app password.';
       }
     } catch (error) {
       console.error('Login error:', error);
-      loginError = error.message || 'An unknown error occurred.';
+      if (error?.message === 'LOGIN_TIMEOUT') {
+        loginError = 'Login is taking longer than expected. Please try again.';
+      } else if (error?.response?.status === 401) {
+        loginError = 'Invalid handle or app password. Please try again.';
+      } else if (error?.response?.status >= 500) {
+        loginError = 'Bluesky is having server issues. Please try again later.';
+      } else if (error?.name === 'TypeError') {
+        // Typical fetch network error in browsers
+        loginError = 'Network error. Please check your internet connection and try again.';
+      } else {
+        loginError = error?.message || 'An unknown error occurred during login.';
+      }
     } finally {
       isLoading = false;
     }

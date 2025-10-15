@@ -2,7 +2,7 @@
   import ImageGrid from './ImageGrid.svelte';
   import ExternalCard from './ExternalCard.svelte';
   import VideoPlayer from './VideoPlayer.svelte';
-  import { renderTextWithLinks } from './utils.js';
+  import QuotedPost from './QuotedPost.svelte';
 
   // Props
   // - embed: object | object[]
@@ -43,27 +43,13 @@
   {/if}
 
   {#if embed.$type === 'app.bsky.embed.record#view' && embed.record && !embed.record.notFound}
-    {@const quotedPost = embed.record}
-    <div class={`border border-gray-600 rounded-lg p-3 ${className}`}>
-      <div class="flex items-center space-x-2 text-sm text-gray-400">
-        <img
-          src={quotedPost.author?.avatar || 'https://placehold.co/24x24/1a202c/ffffff?text=?'}
-          class="w-6 h-6 rounded-full bg-gray-600"
-          alt={quotedPost.author?.displayName}
-        />
-        <span class="font-bold text-white">{quotedPost.author?.displayName || quotedPost.author?.handle}</span>
-        <span class="truncate">@{quotedPost.author?.handle}</span>
-      </div>
-      <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
-        {@html renderTextWithLinks(quotedPost.value?.text, quotedPost.value?.facets)}
-      </div>
-
-      {#if quotedPost.embeds && quotedPost.embeds.length > 0}
-        {#each quotedPost.embeds as inner}
+    <QuotedPost quotedPost={embed.record} {className}>
+      {#if embed.record.embeds && embed.record.embeds.length > 0}
+        {#each embed.record.embeds as inner}
           <svelte:self embed={inner} className="mt-2" clickableImages={false} />
         {/each}
       {/if}
-    </div>
+    </QuotedPost>
   {/if}
 
   {#if embed.$type === 'app.bsky.embed.recordWithMedia#view'}
@@ -88,27 +74,13 @@
     {/if}
 
     {#if embed.record?.record && !embed.record.record.notFound}
-      {@const quotedPost = embed.record.record}
-      <div class={`border border-gray-600 rounded-lg p-3 ${className}`}>
-        <div class="flex items-center space-x-2 text-sm text-gray-400">
-          <img
-            src={quotedPost.author?.avatar || 'https://placehold.co/24x24/1a202c/ffffff?text=?'}
-            class="w-6 h-6 rounded-full bg-gray-600"
-            alt={quotedPost.author?.displayName}
-          />
-          <span class="font-bold text-white">{quotedPost.author?.displayName || quotedPost.author?.handle}</span>
-          <span class="truncate">@{quotedPost.author?.handle}</span>
-        </div>
-        <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
-          {@html renderTextWithLinks(quotedPost.value?.text, quotedPost.value?.facets)}
-        </div>
-
-        {#if quotedPost.embeds && quotedPost.embeds.length > 0}
-          {#each quotedPost.embeds as inner}
+      <QuotedPost quotedPost={embed.record.record} {className}>
+        {#if embed.record.record.embeds && embed.record.record.embeds.length > 0}
+          {#each embed.record.record.embeds as inner}
             <svelte:self embed={inner} className="mt-2" clickableImages={false} />
           {/each}
         {/if}
-      </div>
+      </QuotedPost>
     {/if}
   {/if}
 {/if}
