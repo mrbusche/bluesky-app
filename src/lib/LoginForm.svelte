@@ -28,9 +28,12 @@
       const agent = new AtpAgent({ service: BLUESKY_SERVICE });
 
       const loginPromise = agent.login({ identifier: handle.trim(), password: password.trim() });
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('LOGIN_TIMEOUT')), LOGIN_TIMEOUT_MS));
-
+      let timeoutId;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('LOGIN_TIMEOUT')), LOGIN_TIMEOUT_MS);
+      });
       const response = await Promise.race([loginPromise, timeoutPromise]);
+      clearTimeout(timeoutId);
 
       if (response.success) {
         localStorage.setItem(SESSION_KEY, JSON.stringify(agent.session));
