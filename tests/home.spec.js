@@ -5,7 +5,7 @@ test.describe('Bluesky App - Home Page', () => {
     await page.goto('/');
 
     // Check that the page loads
-    await expect(page).toHaveTitle(/bluesky-app/i);
+    await expect(page).toHaveTitle(/Bluesky App/i);
   });
 
   test('should display login form when not authenticated', async ({ page }) => {
