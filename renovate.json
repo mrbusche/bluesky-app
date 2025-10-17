@@ -11,6 +11,11 @@
       "matchManagers": ["nvm"],
       "matchFileNames": [".nvmrc"],
       "enabled": true
+    },
+    {
+      "matchUpdateTypes": ["major", "minor", "patch", "pin", "digest"],
+      "groupName": "all dependencies",
+      "groupSlug": "all"
     }
   ],
   "assignees": ["@mrbusche"],
