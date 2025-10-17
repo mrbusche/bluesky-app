@@ -1,5 +1,7 @@
 {
   "extends": ["config:recommended"],
+  "timezone": "America/Chicago",
+  "schedule": ["on friday after 9am and before 5pm"],
   "packageRules": [
     {
       "matchManagers": ["npm"],
