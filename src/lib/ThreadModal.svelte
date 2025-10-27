@@ -40,25 +40,30 @@
   }
 
   // Helper to get all posts from thread structure recursively
-  function getThreadPosts(threadNode) {
+  function getThreadPosts(threadNode, authorDid = null) {
     if (!threadNode) return [];
     
     const posts = [];
     
-    // Get parent posts (going up the thread)
-    if (threadNode.parent) {
-      posts.push(...getThreadPosts(threadNode.parent));
+    // Set the author DID from the main post if not set
+    if (authorDid === null && threadNode.post) {
+      authorDid = threadNode.post.author.did;
     }
     
-    // Add current post
-    if (threadNode.post) {
+    // Get parent posts (going up the thread)
+    if (threadNode.parent) {
+      posts.push(...getThreadPosts(threadNode.parent, authorDid));
+    }
+    
+    // Add current post only if it's by the thread author
+    if (threadNode.post && threadNode.post.author.did === authorDid) {
       posts.push(threadNode.post);
     }
     
     // Get replies (going down the thread)
     if (threadNode.replies && Array.isArray(threadNode.replies)) {
       for (const reply of threadNode.replies) {
-        posts.push(...getThreadPosts(reply));
+        posts.push(...getThreadPosts(reply, authorDid));
       }
     }
     

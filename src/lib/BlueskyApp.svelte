@@ -97,7 +97,10 @@
           }
           return false;
         });
-        posts = [...posts, ...newPosts];
+
+        // Filter to show only first and last posts of threads
+        const filteredPosts = await filterThreadPosts(newPosts);
+        posts = [...posts, ...filteredPosts];
         timelineCursor = response.data.cursor;
       } else {
         timelineCursor = null;
@@ -118,6 +121,50 @@
     } finally {
       isFetchingMore = false;
     }
+  }
+
+  // Filter posts to show only first and last of thread chains
+  async function filterThreadPosts(feedPosts) {
+    const threadMap = new Map(); // Maps root URI to array of posts
+    const standalonePost = []; // Non-thread posts
+
+    // Group posts by thread
+    for (const item of feedPosts) {
+      if (!item.post.record.reply || !item.reply?.parent) {
+        // Not a reply, it's a standalone post or thread root
+        standalonePost.push(item);
+      } else {
+        // It's a self-reply, try to find the thread root
+        const parentUri = item.reply.parent.uri;
+        const rootUri = item.reply.root?.uri || parentUri;
+        
+        if (!threadMap.has(rootUri)) {
+          threadMap.set(rootUri, []);
+        }
+        threadMap.get(rootUri).push(item);
+      }
+    }
+
+    const result = [];
+    
+    // Add standalone posts
+    result.push(...standalonePost);
+    
+    // For each thread, keep only first and last posts
+    for (const [rootUri, threadPosts] of threadMap.entries()) {
+      if (threadPosts.length === 1) {
+        // Only one post in this thread segment, keep it
+        result.push(threadPosts[0]);
+      } else if (threadPosts.length === 2) {
+        // Two posts, keep both (first and last)
+        result.push(threadPosts[0], threadPosts[1]);
+      } else {
+        // More than 2 posts, keep only first and last
+        result.push(threadPosts[0], threadPosts[threadPosts.length - 1]);
+      }
+    }
+
+    return result;
   }
 
   // --- Scroll Handling ---

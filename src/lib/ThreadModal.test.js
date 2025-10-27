@@ -192,6 +192,7 @@ describe('ThreadModal Component', () => {
               post: {
                 uri: 'at://did:plc:test/app.bsky.feed.post/parent',
                 author: {
+                  did: 'did:plc:testuser',
                   handle: 'testuser.bsky.social',
                   displayName: 'Test User',
                 },
@@ -204,6 +205,7 @@ describe('ThreadModal Component', () => {
             post: {
               uri: 'at://did:plc:test/app.bsky.feed.post/test',
               author: {
+                did: 'did:plc:testuser',
                 handle: 'testuser.bsky.social',
                 displayName: 'Test User',
               },
@@ -217,6 +219,7 @@ describe('ThreadModal Component', () => {
                 post: {
                   uri: 'at://did:plc:test/app.bsky.feed.post/reply',
                   author: {
+                    did: 'did:plc:testuser',
                     handle: 'testuser.bsky.social',
                     displayName: 'Test User',
                   },
@@ -244,6 +247,74 @@ describe('ThreadModal Component', () => {
       expect(screen.getByText('Parent post')).toBeTruthy();
       expect(screen.getByText('Current post')).toBeTruthy();
       expect(screen.getByText('Reply post')).toBeTruthy();
+    });
+  });
+
+  it('should filter out replies from other users', async () => {
+    const mockAgent = {
+      getPostThread: vi.fn().mockResolvedValue({
+        data: {
+          thread: {
+            post: {
+              uri: 'at://did:plc:test/app.bsky.feed.post/test',
+              author: {
+                did: 'did:plc:testuser',
+                handle: 'testuser.bsky.social',
+                displayName: 'Test User',
+              },
+              record: {
+                text: 'Thread post',
+                createdAt: '2024-01-01T00:00:00Z',
+              },
+            },
+            replies: [
+              {
+                post: {
+                  uri: 'at://did:plc:test/app.bsky.feed.post/reply1',
+                  author: {
+                    did: 'did:plc:testuser',
+                    handle: 'testuser.bsky.social',
+                    displayName: 'Test User',
+                  },
+                  record: {
+                    text: 'Self reply',
+                    createdAt: '2024-01-01T00:00:01Z',
+                  },
+                },
+              },
+              {
+                post: {
+                  uri: 'at://did:plc:test/app.bsky.feed.post/reply2',
+                  author: {
+                    did: 'did:plc:otheruser',
+                    handle: 'otheruser.bsky.social',
+                    displayName: 'Other User',
+                  },
+                  record: {
+                    text: 'Other user reply',
+                    createdAt: '2024-01-01T00:00:02Z',
+                  },
+                },
+              },
+            ],
+          },
+        },
+      }),
+    };
+
+    render(ThreadModal, {
+      props: {
+        open: true,
+        postUri: 'at://did:plc:test/app.bsky.feed.post/test',
+        agent: mockAgent,
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Thread post')).toBeTruthy();
+      expect(screen.getByText('Self reply')).toBeTruthy();
+      // Should NOT show other user's reply
+      expect(screen.queryByText('Other user reply')).toBeNull();
     });
   });
 
