@@ -2,6 +2,7 @@
   import { onMount, tick } from 'svelte';
   import EmbedRenderer from './EmbedRenderer.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
+  import ThreadModal from './ThreadModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import { AtpAgent } from '@atproto/api';
   import { renderTextWithLinks, formatPostDate } from './utils.js';
@@ -20,6 +21,10 @@
   // Profile view state
   let showProfile = false;
   let profileHandle = '';
+
+  // Thread view state
+  let showThread = false;
+  let threadPostUri = '';
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -191,6 +196,15 @@
     profileHandle = '';
   }
 
+  function showThreadView(postUri) {
+    threadPostUri = postUri;
+    showThread = true;
+  }
+  function closeThread() {
+    showThread = false;
+    threadPostUri = '';
+  }
+
   async function toggleLike(postUri, postCid, postIndex) {
     if (!session) return;
 
@@ -230,6 +244,7 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
+<ThreadModal open={showThread} postUri={threadPostUri} {agent} onClose={closeThread} />
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
@@ -269,10 +284,14 @@
                 </div>
               {/if}
               {#if item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did}
-                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+                <button
+                  on:click={() => showThreadView(item.post.uri)}
+                  class="flex items-center space-x-2 text-gray-400 text-sm mb-2 hover:text-blue-400 cursor-pointer transition-colors"
+                  aria-label="View thread"
+                >
                   <span>🧵</span>
                   <span>Thread</span>
-                </div>
+                </button>
               {/if}
               <div class="flex items-center justify-between text-gray-400">
                 <div class="flex items-center space-x-2">
