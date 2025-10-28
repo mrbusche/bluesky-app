@@ -1,8 +1,8 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import { goto } from '$app/navigation';
   import EmbedRenderer from './EmbedRenderer.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
-  import ThreadModal from './ThreadModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import { AtpAgent } from '@atproto/api';
   import { renderTextWithLinks, formatPostDate } from './utils.js';
@@ -21,10 +21,6 @@
   // Profile view state
   let showProfile = false;
   let profileHandle = '';
-
-  // Thread view state
-  let showThread = false;
-  let threadPostUri = '';
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -125,42 +121,65 @@
 
   // Filter posts to show only first and last of thread chains
   async function filterThreadPosts(feedPosts) {
-    const threadMap = new Map(); // Maps root URI to array of posts
-    const standalonePost = []; // Non-thread posts
+    // Map to track thread information: rootUri -> { posts: [], authorDid: '' }
+    const threadMap = new Map();
+    const result = [];
 
-    // Group posts by thread
+    // First pass: group all posts by thread
     for (const item of feedPosts) {
-      if (!item.post.record.reply || !item.reply?.parent) {
-        // Not a reply, it's a standalone post or thread root
-        standalonePost.push(item);
-      } else {
-        // It's a self-reply, try to find the thread root
-        const parentUri = item.reply.parent.uri;
-        const rootUri = item.reply.root?.uri || parentUri;
+      const post = item.post;
+      
+      if (!post.record.reply || !item.reply?.parent) {
+        // This is a root post (not a reply)
+        // Check if it starts a thread by looking for other posts that reply to it
+        const rootUri = post.uri;
+        if (!threadMap.has(rootUri)) {
+          threadMap.set(rootUri, {
+            posts: [item],
+            authorDid: post.author.did,
+            rootUri: rootUri
+          });
+        }
+      } else if (post.author.did === item.reply.parent.author.did) {
+        // This is a self-reply (part of a thread)
+        const rootUri = item.reply.root?.uri || item.reply.parent.uri;
         
         if (!threadMap.has(rootUri)) {
-          threadMap.set(rootUri, []);
+          threadMap.set(rootUri, {
+            posts: [],
+            authorDid: post.author.did,
+            rootUri: rootUri
+          });
         }
-        threadMap.get(rootUri).push(item);
+        threadMap.get(rootUri).posts.push(item);
       }
     }
 
-    const result = [];
-    
-    // Add standalone posts
-    result.push(...standalonePost);
-    
-    // For each thread, keep only first and last posts
-    for (const [rootUri, threadPosts] of threadMap.entries()) {
-      if (threadPosts.length === 1) {
-        // Only one post in this thread segment, keep it
-        result.push(threadPosts[0]);
-      } else if (threadPosts.length === 2) {
-        // Two posts, keep both (first and last)
-        result.push(threadPosts[0], threadPosts[1]);
+    // Second pass: for each thread, decide which posts to show
+    for (const [rootUri, threadData] of threadMap.entries()) {
+      const threadPosts = threadData.posts;
+      
+      if (threadPosts.length === 0) {
+        continue; // Skip empty threads
+      } else if (threadPosts.length === 1) {
+        // Single post - show it without thread indicator
+        const post = threadPosts[0];
+        post._isThreadPost = false;
+        post._isLastInThread = false;
+        result.push(post);
       } else {
-        // More than 2 posts, keep only first and last
-        result.push(threadPosts[0], threadPosts[threadPosts.length - 1]);
+        // Multiple posts - show only first and last
+        // Mark first post
+        const firstPost = threadPosts[0];
+        firstPost._isThreadPost = true;
+        firstPost._isLastInThread = false;
+        result.push(firstPost);
+        
+        // Mark last post
+        const lastPost = threadPosts[threadPosts.length - 1];
+        lastPost._isThreadPost = true;
+        lastPost._isLastInThread = true;
+        result.push(lastPost);
       }
     }
 
@@ -244,12 +263,9 @@
   }
 
   function showThreadView(postUri) {
-    threadPostUri = postUri;
-    showThread = true;
-  }
-  function closeThread() {
-    showThread = false;
-    threadPostUri = '';
+    // Navigate to thread page
+    const encodedUri = encodeURIComponent(postUri);
+    goto(`/thread/${encodedUri}`);
   }
 
   async function toggleLike(postUri, postCid, postIndex) {
@@ -291,7 +307,6 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
-<ThreadModal open={showThread} postUri={threadPostUri} {agent} onClose={closeThread} />
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
@@ -330,7 +345,7 @@
                   <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
                 </div>
               {/if}
-              {#if item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did}
+              {#if item._isLastInThread}
                 <button
                   on:click={() => showThreadView(item.post.uri)}
                   class="flex items-center space-x-2 text-gray-400 text-sm mb-2 hover:text-blue-400 cursor-pointer transition-colors"
