@@ -23,7 +23,8 @@
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
-  const LAST_VIEWED_POST_URI_KEY = 'blueskyLastViewedPostUri';
+  const LAST_VIEWED_POST_TIMESTAMP_KEY = 'blueskyLastViewedPostTimestamp';
+  const LAST_VIEWED_POST_URI_KEY = 'blueskyLastViewedPostUri'; // Legacy key for migration
   const SESSION_KEY = 'blueskySession';
 
   // --- Lifecycle & Initialization ---
@@ -62,7 +63,8 @@
 
   function handleLogout() {
     localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
+    localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
+    localStorage.removeItem(LAST_VIEWED_POST_URI_KEY); // Clean up legacy key
     session = null;
     posts = [];
     timelineCursor = null;
@@ -129,42 +131,116 @@
       );
 
       if (firstVisiblePost) {
-        localStorage.setItem(LAST_VIEWED_POST_URI_KEY, firstVisiblePost.id);
+        const postUri = firstVisiblePost.id;
+        const post = posts.find((item) => item.post.uri === postUri);
+        if (post?.post?.record?.createdAt) {
+          const timestamp = new Date(post.post.record.createdAt).getTime();
+          localStorage.setItem(LAST_VIEWED_POST_TIMESTAMP_KEY, timestamp.toString());
+        }
       }
     }, 250);
   }
 
   async function restoreScrollPosition() {
-    const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
-    if (!savedUri) return;
+    // Try new timestamp-based approach first
+    let savedTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
+    
+    // Migrate from old URI-based approach if no timestamp found
+    if (!savedTimestamp) {
+      const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
+      if (savedUri) {
+        console.log('Migrating from URI-based to timestamp-based scroll position');
+        // Try to find the post and get its timestamp
+        const post = posts.find((item) => item.post.uri === savedUri);
+        if (post?.post?.record?.createdAt) {
+          savedTimestamp = new Date(post.post.record.createdAt).getTime().toString();
+          localStorage.setItem(LAST_VIEWED_POST_TIMESTAMP_KEY, savedTimestamp);
+          localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
+        }
+      }
+    }
+    
+    if (!savedTimestamp) return;
 
+    const targetTimestamp = parseInt(savedTimestamp, 10);
     isRestoringScroll = true;
+    
     try {
-      let elementToRestore = null;
+      let closestPost = null;
       let attempts = 0;
       const MAX_FETCH_ATTEMPTS = 10;
 
-      while (!elementToRestore && timelineCursor && attempts < MAX_FETCH_ATTEMPTS) {
+      // Function to find the closest post by timestamp
+      const findClosestPost = () => {
+        let closest = null;
+        let minDiff = Infinity;
+        
+        for (const item of posts) {
+          if (item.post?.record?.createdAt) {
+            const postTimestamp = new Date(item.post.record.createdAt).getTime();
+            const diff = Math.abs(postTimestamp - targetTimestamp);
+            
+            if (diff < minDiff) {
+              minDiff = diff;
+              closest = item;
+            }
+            
+            // If we found a post with the exact timestamp, we can stop
+            if (diff === 0) break;
+          }
+        }
+        
+        return closest;
+      };
+
+      // Try to find the closest post, fetching more posts if needed
+      while (attempts < MAX_FETCH_ATTEMPTS) {
         await tick();
-        elementToRestore = document.getElementById(savedUri);
-        if (!elementToRestore) {
-          console.log(`Post ${savedUri} not found, fetching more...`);
+        closestPost = findClosestPost();
+        
+        if (closestPost) {
+          const closestTimestamp = new Date(closestPost.post.record.createdAt).getTime();
+          
+          // If we found an exact match or a very close match, use it
+          if (closestTimestamp === targetTimestamp) {
+            break;
+          }
+          
+          // If we found a post that's newer than the target and we have more to fetch, keep trying
+          if (closestTimestamp > targetTimestamp && timelineCursor) {
+            console.log(`Closest post is newer than target, fetching more...`);
+            await fetchTimeline();
+            attempts++;
+          } else {
+            // We found the best match we can
+            break;
+          }
+        } else if (timelineCursor) {
+          console.log(`No posts found yet, fetching more...`);
           await fetchTimeline();
           attempts++;
+        } else {
+          break;
         }
       }
 
-      if (elementToRestore) {
-        console.log(`Post ${savedUri} found after ${attempts} fetches. Scrolling into view.`);
-        const header = document.querySelector('header');
-        const headerHeight = header ? header.offsetHeight : 0;
-        elementToRestore.scrollIntoView({ behavior: 'auto', block: 'start' });
-        if (headerHeight > 0) {
-          window.scrollBy(0, -headerHeight - 16);
+      if (closestPost) {
+        const postTimestamp = new Date(closestPost.post.record.createdAt).getTime();
+        const diffSeconds = Math.abs(postTimestamp - targetTimestamp) / 1000;
+        console.log(`Found closest post (${diffSeconds.toFixed(0)}s difference) after ${attempts} fetches. Scrolling into view.`);
+        
+        const elementToRestore = document.getElementById(closestPost.post.uri);
+        if (elementToRestore) {
+          const header = document.querySelector('header');
+          const headerHeight = header ? header.offsetHeight : 0;
+          elementToRestore.scrollIntoView({ behavior: 'auto', block: 'start' });
+          if (headerHeight > 0) {
+            window.scrollBy(0, -headerHeight - 16);
+          }
         }
       } else {
-        console.warn(`Could not find post ${savedUri} after ${attempts} fetches. Clearing saved position.`);
-        localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
+        console.warn(`Could not find a suitable post after ${attempts} fetches. Clearing saved position.`);
+        localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
       }
     } catch (error) {
       console.error('Error during scroll restoration:', error);
