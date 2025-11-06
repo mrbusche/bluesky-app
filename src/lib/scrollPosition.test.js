@@ -5,11 +5,13 @@ describe('Scroll Position Storage', () => {
   const LAST_VIEWED_POST_URI_KEY = 'blueskyLastViewedPostUri';
 
   beforeEach(() => {
-    localStorage.clear();
+    localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
+    localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
   });
 
   afterEach(() => {
-    localStorage.clear();
+    localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
+    localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
   });
 
   describe('Timestamp-based storage', () => {
