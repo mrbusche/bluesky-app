@@ -1,17 +1,34 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+// Mock localStorage
+const localStorageMock = (() => {
+  let store = {};
+  return {
+    getItem: vi.fn((key) => store[key] || null),
+    setItem: vi.fn((key, value) => {
+      store[key] = value.toString();
+    }),
+    removeItem: vi.fn((key) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
+  };
+})();
+global.localStorage = localStorageMock;
+
 describe('Scroll Position Storage', () => {
   const LAST_VIEWED_POST_TIMESTAMP_KEY = 'blueskyLastViewedPostTimestamp';
   const LAST_VIEWED_POST_URI_KEY = 'blueskyLastViewedPostUri';
 
   beforeEach(() => {
-    localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
-    localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
+    vi.clearAllMocks();
+    localStorage.clear();
   });
 
   afterEach(() => {
-    localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
-    localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
+    localStorage.clear();
   });
 
   describe('Timestamp-based storage', () => {
