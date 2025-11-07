@@ -4,6 +4,7 @@
   // Props
   export let quotedPost = null;
   export let className = '';
+  export let showUserProfile = null; // Optional callback for handling mention clicks
 </script>
 
 {#if quotedPost}
@@ -17,7 +18,16 @@
       <span class="font-bold text-white">{quotedPost.author?.displayName || quotedPost.author?.handle}</span>
       <span class="truncate">@{quotedPost.author?.handle}</span>
     </div>
-    <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words">
+    <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words" on:click={(e) => {
+      if (showUserProfile) {
+        const target = e.target;
+        if (target.dataset.mentionDid) {
+          const mentionText = target.textContent;
+          const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
+          showUserProfile(handle);
+        }
+      }
+    }}>
       {@html renderTextWithLinks(quotedPost.value?.text, quotedPost.value?.facets)}
     </div>
 

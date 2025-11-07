@@ -378,12 +378,20 @@
                   {/if}
                 </button>
               </div>
-              <div class="text-white mt-1 whitespace-pre-wrap break-words">
+              <div class="text-white mt-1 whitespace-pre-wrap break-words" on:click={(e) => {
+                const target = e.target;
+                if (target.dataset.mentionDid) {
+                  const mentionText = target.textContent;
+                  // Extract handle from mention text (remove @ prefix if present)
+                  const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
+                  showUserProfile(handle);
+                }
+              }}>
                 {@html renderTextWithLinks(item.post.record.text, item.post.record.facets)}
               </div>
 
               {#if item.post.embed}
-                <EmbedRenderer embed={item.post.embed} className="mt-3" clickableImages={true} />
+                <EmbedRenderer embed={item.post.embed} className="mt-3" clickableImages={true} showUserProfile={showUserProfile} />
               {/if}
             </div>
           </article>
