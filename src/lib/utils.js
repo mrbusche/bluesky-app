@@ -44,7 +44,7 @@ export const renderTextWithLinks = (text, facets) => {
       )}</a>`;
     } else if (mentionFeature && mentionFeature.did) {
       // Render mention as a clickable span with data attribute
-      result += `<span class="text-blue-400 hover:underline cursor-pointer" data-mention-did="${escapeHtml(mentionFeature.did)}">${escapeHtml(
+      result += `<span class="text-blue-400 hover:underline cursor-pointer" data-mention-did="${escapeHtml(mentionFeature.did)}" role="button" tabindex="0">${escapeHtml(
         facetText,
       )}</span>`;
     } else {

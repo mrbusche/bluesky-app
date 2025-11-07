@@ -27,6 +27,16 @@
           showUserProfile(handle);
         }
       }
+    }} on:keydown={(e) => {
+      if (showUserProfile && (e.key === 'Enter' || e.key === ' ')) {
+        const target = e.target;
+        if (target.dataset.mentionDid) {
+          const mentionText = target.textContent;
+          const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
+          showUserProfile(handle);
+          e.preventDefault();
+        }
+      }
     }}>
       {@html renderTextWithLinks(quotedPost.value?.text, quotedPost.value?.facets)}
     </div>

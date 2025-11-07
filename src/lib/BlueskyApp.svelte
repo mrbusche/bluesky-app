@@ -386,6 +386,16 @@
                   const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
                   showUserProfile(handle);
                 }
+              }} on:keydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  const target = e.target;
+                  if (target.dataset.mentionDid) {
+                    const mentionText = target.textContent;
+                    const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
+                    showUserProfile(handle);
+                    e.preventDefault();
+                  }
+                }
               }}>
                 {@html renderTextWithLinks(item.post.record.text, item.post.record.facets)}
               </div>
