@@ -1,5 +1,6 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import { goto } from '$app/navigation';
   import EmbedRenderer from './EmbedRenderer.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
   import LoginForm from './LoginForm.svelte';
@@ -94,7 +95,10 @@
           }
           return false;
         });
-        posts = [...posts, ...newPosts];
+
+        // Filter to show only first and last posts of threads
+        const filteredPosts = await filterThreadPosts(newPosts);
+        posts = [...posts, ...filteredPosts];
         timelineCursor = response.data.cursor;
       } else {
         timelineCursor = null;
@@ -115,6 +119,73 @@
     } finally {
       isFetchingMore = false;
     }
+  }
+
+  // Filter posts to show only first and last of thread chains
+  async function filterThreadPosts(feedPosts) {
+    // Map to track thread information: rootUri -> { posts: [], authorDid: '' }
+    const threadMap = new Map();
+    const result = [];
+
+    // First pass: group all posts by thread
+    for (const item of feedPosts) {
+      const post = item.post;
+      
+      if (!post.record.reply || !item.reply?.parent) {
+        // This is a root post (not a reply)
+        // Check if it starts a thread by looking for other posts that reply to it
+        const rootUri = post.uri;
+        if (!threadMap.has(rootUri)) {
+          threadMap.set(rootUri, {
+            posts: [item],
+            authorDid: post.author.did,
+            rootUri: rootUri
+          });
+        }
+      } else if (post.author.did === item.reply.parent.author.did) {
+        // This is a self-reply (part of a thread)
+        const rootUri = item.reply.root?.uri || item.reply.parent.uri;
+        
+        if (!threadMap.has(rootUri)) {
+          threadMap.set(rootUri, {
+            posts: [],
+            authorDid: post.author.did,
+            rootUri: rootUri
+          });
+        }
+        threadMap.get(rootUri).posts.push(item);
+      }
+    }
+
+    // Second pass: for each thread, decide which posts to show
+    for (const [rootUri, threadData] of threadMap.entries()) {
+      const threadPosts = threadData.posts;
+      
+      if (threadPosts.length === 0) {
+        continue; // Skip empty threads
+      } else if (threadPosts.length === 1) {
+        // Single post - show it without thread indicator
+        const post = threadPosts[0];
+        post._isThreadPost = false;
+        post._isLastInThread = false;
+        result.push(post);
+      } else {
+        // Multiple posts - show only first and last
+        // Mark first post
+        const firstPost = threadPosts[0];
+        firstPost._isThreadPost = true;
+        firstPost._isLastInThread = false;
+        result.push(firstPost);
+        
+        // Mark last post
+        const lastPost = threadPosts[threadPosts.length - 1];
+        lastPost._isThreadPost = true;
+        lastPost._isLastInThread = true;
+        result.push(lastPost);
+      }
+    }
+
+    return result;
   }
 
   // --- Scroll Handling ---
@@ -267,6 +338,12 @@
     profileHandle = '';
   }
 
+  function showThreadView(postUri) {
+    // Navigate to thread page
+    const encodedUri = encodeURIComponent(postUri);
+    goto(`/thread/${encodedUri}`);
+  }
+
   async function toggleLike(postUri, postCid, postIndex) {
     if (!session) return;
 
@@ -344,11 +421,15 @@
                   <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
                 </div>
               {/if}
-              {#if item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did}
-                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+              {#if item._isLastInThread}
+                <button
+                  on:click={() => showThreadView(item.post.uri)}
+                  class="flex items-center space-x-2 text-gray-400 text-sm mb-2 hover:text-blue-400 cursor-pointer transition-colors"
+                  aria-label="View thread"
+                >
                   <span>🧵</span>
                   <span>Thread</span>
-                </div>
+                </button>
               {/if}
               <div class="flex items-center justify-between text-gray-400">
                 <div class="flex items-center space-x-2">
