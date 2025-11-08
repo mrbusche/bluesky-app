@@ -8,9 +8,11 @@
   // - embed: object | object[]
   // - className: string applied to top-level rendered element for spacing (e.g., mt-3 or mt-2)
   // - clickableImages: when false, image grids render plain <img> instead of <a>
+  // - showUserProfile: optional callback for handling mention clicks
   export let embed = null;
   export let className = '';
   export let clickableImages = true;
+  export let showUserProfile = null;
 
   const isArray = (v) => Array.isArray(v);
 </script>
@@ -19,7 +21,7 @@
   <!-- nothing -->
 {:else if isArray(embed)}
   {#each embed as e}
-    <svelte:self embed={e} {className} {clickableImages} />
+    <svelte:self embed={e} {className} {clickableImages} {showUserProfile} />
   {/each}
 {:else}
   {#if embed.images}
@@ -43,10 +45,10 @@
   {/if}
 
   {#if embed.$type === 'app.bsky.embed.record#view' && embed.record && !embed.record.notFound}
-    <QuotedPost quotedPost={embed.record} {className}>
+    <QuotedPost quotedPost={embed.record} {className} {showUserProfile}>
       {#if embed.record.embeds && embed.record.embeds.length > 0}
         {#each embed.record.embeds as inner}
-          <svelte:self embed={inner} className="mt-2" clickableImages={false} />
+          <svelte:self embed={inner} className="mt-2" clickableImages={false} {showUserProfile} />
         {/each}
       {/if}
     </QuotedPost>
@@ -74,10 +76,10 @@
     {/if}
 
     {#if embed.record?.record && !embed.record.record.notFound}
-      <QuotedPost quotedPost={embed.record.record} {className}>
+      <QuotedPost quotedPost={embed.record.record} {className} {showUserProfile}>
         {#if embed.record.record.embeds && embed.record.record.embeds.length > 0}
           {#each embed.record.record.embeds as inner}
-            <svelte:self embed={inner} className="mt-2" clickableImages={false} />
+            <svelte:self embed={inner} className="mt-2" clickableImages={false} {showUserProfile} />
           {/each}
         {/if}
       </QuotedPost>

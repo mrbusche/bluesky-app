@@ -97,6 +97,70 @@ describe('renderTextWithLinks', () => {
     expect(renderTextWithLinks(null)).toBe('');
     expect(renderTextWithLinks('')).toBe('');
   });
+
+  it('should render mentions from facets', () => {
+    const text = 'Hello @alice.bsky.social how are you?';
+    const facets = [
+      {
+        index: { byteStart: 6, byteEnd: 24 },
+        features: [
+          {
+            $type: 'app.bsky.richtext.facet#mention',
+            did: 'did:plc:1234567890',
+          },
+        ],
+      },
+    ];
+    const result = renderTextWithLinks(text, facets);
+    expect(result).toContain('data-mention-did="did:plc:1234567890"');
+    expect(result).toContain('class="text-blue-400 hover:underline cursor-pointer"');
+    expect(result).toContain('@alice.bsky.social');
+  });
+
+  it('should handle both links and mentions in same text', () => {
+    const text = 'Hey @bob check out example.com';
+    const facets = [
+      {
+        index: { byteStart: 4, byteEnd: 8 },
+        features: [
+          {
+            $type: 'app.bsky.richtext.facet#mention',
+            did: 'did:plc:bob123',
+          },
+        ],
+      },
+      {
+        index: { byteStart: 19, byteEnd: 30 },
+        features: [
+          {
+            $type: 'app.bsky.richtext.facet#link',
+            uri: 'https://example.com',
+          },
+        ],
+      },
+    ];
+    const result = renderTextWithLinks(text, facets);
+    expect(result).toContain('data-mention-did="did:plc:bob123"');
+    expect(result).toContain('<a href="https://example.com"');
+  });
+
+  it('should escape HTML in mention text', () => {
+    const text = 'Hello @<script>alert("xss")</script>';
+    const facets = [
+      {
+        index: { byteStart: 6, byteEnd: 36 },
+        features: [
+          {
+            $type: 'app.bsky.richtext.facet#mention',
+            did: 'did:plc:test',
+          },
+        ],
+      },
+    ];
+    const result = renderTextWithLinks(text, facets);
+    expect(result).toContain('&lt;script&gt;');
+    expect(result).not.toContain('<script>');
+  });
 });
 
 describe('formatPostDate', () => {

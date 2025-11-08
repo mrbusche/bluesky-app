@@ -36,10 +36,17 @@ export const renderTextWithLinks = (text, facets) => {
     const facetText = decoder.decode(facetBytes);
 
     const linkFeature = facet.features?.find((f) => f.$type === 'app.bsky.richtext.facet#link');
+    const mentionFeature = facet.features?.find((f) => f.$type === 'app.bsky.richtext.facet#mention');
+
     if (linkFeature && linkFeature.uri && isExternalUrl(linkFeature.uri)) {
       result += `<a href="${escapeHtml(linkFeature.uri)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${escapeHtml(
         facetText,
       )}</a>`;
+    } else if (mentionFeature && mentionFeature.did) {
+      // Render mention as a clickable span with data attribute
+      result += `<span class="text-blue-400 hover:underline cursor-pointer" data-mention-did="${escapeHtml(mentionFeature.did)}" role="button" tabindex="0">${escapeHtml(
+        facetText,
+      )}</span>`;
     } else {
       result += escapeHtml(facetText);
     }
