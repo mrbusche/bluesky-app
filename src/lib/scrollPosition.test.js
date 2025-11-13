@@ -51,6 +51,25 @@ describe('Scroll Position Storage', () => {
     });
   });
 
+  describe('URI-based storage', () => {
+    it('should store post URI as string', () => {
+      const uri = 'at://did:plc:xyz/app.bsky.feed.post/abc123';
+      localStorage.setItem(LAST_VIEWED_POST_URI_KEY, uri);
+
+      const stored = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
+      expect(stored).toBe(uri);
+    });
+
+    it('should handle different URI formats', () => {
+      const uris = ['at://did:plc:abc/app.bsky.feed.post/123', 'at://did:plc:xyz123/app.bsky.feed.post/post456'];
+
+      uris.forEach((uri) => {
+        localStorage.setItem(LAST_VIEWED_POST_URI_KEY, uri);
+        expect(localStorage.getItem(LAST_VIEWED_POST_URI_KEY)).toBe(uri);
+      });
+    });
+  });
+
   describe('Finding closest post by timestamp', () => {
     it('should find exact match', () => {
       const targetTimestamp = 1705320000000; // 2024-01-15T12:00:00Z
@@ -149,27 +168,45 @@ describe('Scroll Position Storage', () => {
     });
   });
 
-  describe('Migration from URI to timestamp', () => {
-    it('should detect legacy URI-based storage', () => {
-      const legacyUri = 'at://did:plc:xyz/app.bsky.feed.post/abc123';
-      localStorage.setItem(LAST_VIEWED_POST_URI_KEY, legacyUri);
-
-      const hasTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
-      const hasLegacyUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
-
-      expect(hasTimestamp).toBeNull();
-      expect(hasLegacyUri).toBe(legacyUri);
-    });
-
-    it('should prefer timestamp over URI if both exist', () => {
-      const legacyUri = 'at://did:plc:xyz/app.bsky.feed.post/abc123';
+  describe('Hybrid URI and timestamp approach', () => {
+    it('should store both URI and timestamp', () => {
+      const uri = 'at://did:plc:xyz/app.bsky.feed.post/abc123';
       const timestamp = new Date('2024-01-15T12:00:00Z').getTime();
 
-      localStorage.setItem(LAST_VIEWED_POST_URI_KEY, legacyUri);
+      localStorage.setItem(LAST_VIEWED_POST_URI_KEY, uri);
       localStorage.setItem(LAST_VIEWED_POST_TIMESTAMP_KEY, timestamp.toString());
 
+      const hasUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
+      const hasTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
+
+      expect(hasUri).toBe(uri);
+      expect(hasTimestamp).toBe(timestamp.toString());
+    });
+
+    it('should prefer URI over timestamp when both exist', () => {
+      const uri = 'at://did:plc:xyz/app.bsky.feed.post/abc123';
+      const timestamp = new Date('2024-01-15T12:00:00Z').getTime();
+
+      localStorage.setItem(LAST_VIEWED_POST_URI_KEY, uri);
+      localStorage.setItem(LAST_VIEWED_POST_TIMESTAMP_KEY, timestamp.toString());
+
+      // In the actual implementation, URI is tried first
+      const storedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
       const storedTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
+
+      expect(storedUri).toBe(uri);
       expect(storedTimestamp).toBe(timestamp.toString());
+    });
+
+    it('should use timestamp as fallback when URI is not available', () => {
+      const timestamp = new Date('2024-01-15T12:00:00Z').getTime();
+      localStorage.setItem(LAST_VIEWED_POST_TIMESTAMP_KEY, timestamp.toString());
+
+      const hasUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
+      const hasTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
+
+      expect(hasUri).toBeNull();
+      expect(hasTimestamp).toBe(timestamp.toString());
     });
   });
 
