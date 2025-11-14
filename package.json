@@ -12,9 +12,11 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "lint": "prettier --check .",
-    "prettier:fix": "prettier --write ."
+    "prettier:fix": "prettier --write .",
+    "biome:fix": "npx @biomejs/biome check --write ."
   },
   "devDependencies": {
+    "@biomejs/biome": "2.3.5",
     "@playwright/test": "1.56.1",
     "@sveltejs/adapter-auto": "7.0.0",
     "@sveltejs/kit": "2.48.4",
