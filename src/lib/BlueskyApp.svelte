@@ -2,6 +2,7 @@
   import { onMount, tick } from 'svelte';
   import EmbedRenderer from './EmbedRenderer.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
+  import ThreadModal from './ThreadModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import { AtpAgent } from '@atproto/api';
   import { renderTextWithLinks, formatPostDate } from './utils.js';
@@ -20,6 +21,10 @@
   // Profile view state
   let showProfile = false;
   let profileHandle = '';
+
+  // Thread view state
+  let showThread = false;
+  let threadUri = '';
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -94,7 +99,14 @@
           }
           return false;
         });
-        posts = [...posts, ...newPosts];
+
+        // Add new posts to existing posts first, then group into threads
+        // Deduplicate based on URI to prevent key collision errors
+        const existingUris = new Set(posts.map((p) => p.post.uri));
+        const uniqueNewPosts = newPosts.filter((p) => !existingUris.has(p.post.uri));
+
+        const allPosts = [...posts, ...uniqueNewPosts];
+        posts = groupPostsIntoThreads(allPosts);
         timelineCursor = response.data.cursor;
       } else {
         timelineCursor = null;
@@ -146,7 +158,7 @@
   async function restoreScrollPosition() {
     // Try URI-based approach first (original implementation)
     const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
-    
+
     if (savedUri) {
       isRestoringScroll = true;
       try {
@@ -185,14 +197,14 @@
 
     // Fallback to timestamp-based approach if URI didn't work
     const savedTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
-    
+
     if (!savedTimestamp) {
       isRestoringScroll = false;
       return;
     }
 
     const targetTimestamp = parseInt(savedTimestamp, 10);
-    
+
     try {
       let closestPost = null;
       let attempts = 0;
@@ -202,22 +214,22 @@
       const findClosestPost = () => {
         let closest = null;
         let minDiff = Infinity;
-        
+
         for (const item of posts) {
           if (item.post?.record?.createdAt) {
             const postTimestamp = new Date(item.post.record.createdAt).getTime();
             const diff = Math.abs(postTimestamp - targetTimestamp);
-            
+
             if (diff < minDiff) {
               minDiff = diff;
               closest = item;
             }
-            
+
             // If we found a post with the exact timestamp, we can stop
             if (diff === 0) break;
           }
         }
-        
+
         return closest;
       };
 
@@ -225,15 +237,15 @@
       while (attempts < MAX_FETCH_ATTEMPTS) {
         await tick();
         closestPost = findClosestPost();
-        
+
         if (closestPost) {
           const closestTimestamp = new Date(closestPost.post.record.createdAt).getTime();
-          
+
           // If we found an exact match or a very close match, use it
           if (closestTimestamp === targetTimestamp) {
             break;
           }
-          
+
           // If we found a post that's newer than the target and we have more to fetch, keep trying
           if (closestTimestamp > targetTimestamp && timelineCursor) {
             console.log(`Closest post is newer than target, fetching more...`);
@@ -255,8 +267,10 @@
       if (closestPost) {
         const postTimestamp = new Date(closestPost.post.record.createdAt).getTime();
         const diffSeconds = Math.abs(postTimestamp - targetTimestamp) / 1000;
-        console.log(`Found closest post (${diffSeconds.toFixed(0)}s difference) after ${attempts} fetches using timestamp fallback. Scrolling into view.`);
-        
+        console.log(
+          `Found closest post (${diffSeconds.toFixed(0)}s difference) after ${attempts} fetches using timestamp fallback. Scrolling into view.`,
+        );
+
         const elementToRestore = document.getElementById(closestPost.post.uri);
         if (elementToRestore) {
           const header = document.querySelector('header');
@@ -294,6 +308,121 @@
   function closeProfile() {
     showProfile = false;
     profileHandle = '';
+  }
+
+  function showThreadModal(uri) {
+    threadUri = uri;
+    showThread = true;
+  }
+
+  function closeThread() {
+    showThread = false;
+    threadUri = '';
+  }
+
+  // Group posts into threads, showing only first and last posts for threads with multiple posts
+  function groupPostsIntoThreads(allPosts) {
+    const postsByUri = new Map();
+    for (const item of allPosts) {
+      postsByUri.set(item.post.uri, item);
+    }
+
+    const parentToChildren = new Map(); // parentUri -> [childUri]
+    const childToParent = new Map(); // childUri -> parentUri
+
+    // Build relationships for self-replies within the feed
+    for (const item of allPosts) {
+      if (item.post.record.reply) {
+        const parentDid = item.reply?.parent?.author?.did;
+        const currentDid = item.post.author.did;
+
+        if (parentDid === currentDid) {
+          const parentUri = item.reply?.parent?.uri;
+          if (parentUri && postsByUri.has(parentUri)) {
+            // Link them
+            childToParent.set(item.post.uri, parentUri);
+
+            if (!parentToChildren.has(parentUri)) {
+              parentToChildren.set(parentUri, []);
+            }
+            parentToChildren.get(parentUri).push(item.post.uri);
+          }
+        }
+      }
+    }
+
+    // Find connected components (threads)
+    const processedUris = new Set();
+    const result = [];
+
+    for (const item of allPosts) {
+      if (processedUris.has(item.post.uri)) continue;
+
+      // 1. Find local root
+      let root = item;
+      let currentUri = item.post.uri;
+      while (childToParent.has(currentUri)) {
+        currentUri = childToParent.get(currentUri);
+        root = postsByUri.get(currentUri);
+      }
+
+      // 2. Collect all descendants from root
+      const threadItems = [];
+      const queue = [root];
+      const threadUris = new Set();
+
+      while (queue.length > 0) {
+        const current = queue.shift();
+        if (threadUris.has(current.post.uri)) continue;
+
+        threadUris.add(current.post.uri);
+        threadItems.push(current);
+
+        const children = parentToChildren.get(current.post.uri);
+        if (children) {
+          for (const childUri of children) {
+            const child = postsByUri.get(childUri);
+            if (child) queue.push(child);
+          }
+        }
+      }
+
+      // Mark all as processed
+      for (const tItem of threadItems) {
+        processedUris.add(tItem.post.uri);
+      }
+
+      // 3. Process the thread
+      if (threadItems.length === 1) {
+        result.push(threadItems[0]);
+      } else {
+        // Sort by creation date
+        threadItems.sort((a, b) => new Date(a.post.record.createdAt) - new Date(b.post.record.createdAt));
+
+        const firstPost = threadItems[0];
+        const lastPost = threadItems[threadItems.length - 1];
+
+        // Add last post if different
+        if (firstPost.post.uri !== lastPost.post.uri) {
+          result.push({
+            ...lastPost,
+            isThreadEnd: true,
+            threadLength: threadItems.length,
+            threadRootUri: firstPost.post.uri,
+          });
+        }
+
+        // Add first post
+        result.push({
+          ...firstPost,
+          isThreadStart: true,
+          threadLength: threadItems.length,
+          threadRootUri: firstPost.post.uri,
+        });
+      }
+    }
+
+    return result;
   }
 
   async function toggleLike(postUri, postCid, postIndex) {
@@ -335,6 +464,7 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
+<ThreadModal open={showThread} {threadUri} {agent} {session} onClose={closeThread} {showUserProfile} />
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
@@ -358,11 +488,17 @@
       <main>
         {#each posts as item (item.post.uri)}
           <article id={item.post.uri} class="p-4 border-b border-gray-700 flex space-x-4">
-            <div>
+            <div class="relative flex-shrink-0">
+              {#if item.isThreadEnd}
+                <div class="absolute left-1/2 -translate-x-1/2 w-0.5 bg-gray-600 top-12 -bottom-4"></div>
+              {/if}
+              {#if item.isThreadStart && item.threadLength > 1}
+                <div class="absolute left-1/2 -translate-x-1/2 w-0.5 bg-gray-600 -top-4 h-4"></div>
+              {/if}
               <img
                 src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
                 alt={item.post.author.displayName}
-                class="w-12 h-12 rounded-full bg-gray-600"
+                class="w-12 h-12 rounded-full bg-gray-600 relative z-10"
               />
             </div>
             <div class="flex-1 overflow-hidden">
@@ -373,11 +509,22 @@
                   <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
                 </div>
               {/if}
-              {#if item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did}
-                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+              {#if item.isThreadStart}
+                <button
+                  on:click={() => showThreadModal(item.threadRootUri)}
+                  class="flex items-center space-x-2 text-blue-400 text-sm mb-2 hover:underline cursor-pointer"
+                >
+                  <span>🧵</span>
+                  <span>Thread ({item.threadLength} posts)</span>
+                </button>
+              {:else if item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did && !item.isThreadEnd}
+                <button
+                  on:click={() => showThreadModal(item.post.uri)}
+                  class="flex items-center space-x-2 text-blue-400 text-sm mb-2 hover:underline cursor-pointer"
+                >
                   <span>🧵</span>
                   <span>Thread</span>
-                </div>
+                </button>
               {/if}
               <div class="flex items-center justify-between text-gray-400">
                 <div class="flex items-center space-x-2">
@@ -407,30 +554,36 @@
                   {/if}
                 </button>
               </div>
-              <div class="text-white mt-1 whitespace-pre-wrap break-words" on:click={(e) => {
-                const target = e.target;
-                if (target.dataset.mentionDid) {
-                  const mentionText = target.textContent;
-                  // Extract handle from mention text (remove @ prefix if present)
-                  const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
-                  showUserProfile(handle);
-                }
-              }} on:keydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+              <div
+                class="text-white mt-1 whitespace-pre-wrap break-words"
+                role="button"
+                tabindex="0"
+                on:click={(e) => {
                   const target = e.target;
                   if (target.dataset.mentionDid) {
                     const mentionText = target.textContent;
+                    // Extract handle from mention text (remove @ prefix if present)
                     const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
                     showUserProfile(handle);
-                    e.preventDefault();
                   }
-                }
-              }}>
+                }}
+                on:keydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    const target = e.target;
+                    if (target.dataset.mentionDid) {
+                      const mentionText = target.textContent;
+                      const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
+                      showUserProfile(handle);
+                      e.preventDefault();
+                    }
+                  }
+                }}
+              >
                 {@html renderTextWithLinks(item.post.record.text, item.post.record.facets)}
               </div>
 
               {#if item.post.embed}
-                <EmbedRenderer embed={item.post.embed} className="mt-3" clickableImages={true} showUserProfile={showUserProfile} />
+                <EmbedRenderer embed={item.post.embed} className="mt-3" clickableImages={true} {showUserProfile} />
               {/if}
             </div>
           </article>
