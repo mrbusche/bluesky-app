@@ -403,6 +403,14 @@
         const firstPost = threadItems[0];
         const lastPost = threadItems[threadItems.length - 1];
 
+        // Add first post
+        result.push({
+          ...firstPost,
+          isThreadStart: true,
+          threadLength: threadItems.length,
+          threadRootUri: firstPost.post.uri,
+        });
+
         // Add last post if different
         if (firstPost.post.uri !== lastPost.post.uri) {
           result.push({
@@ -412,14 +420,6 @@
             threadRootUri: firstPost.post.uri,
           });
         }
-
-        // Add first post
-        result.push({
-          ...firstPost,
-          isThreadStart: true,
-          threadLength: threadItems.length,
-          threadRootUri: firstPost.post.uri,
-        });
       }
     }
 
@@ -490,10 +490,10 @@
           <article id={item.post.uri} class="p-4 border-b border-gray-700 flex space-x-4">
             <div class="relative flex-shrink-0">
               {#if item.isThreadEnd}
-                <div class="absolute left-1/2 -translate-x-1/2 w-0.5 bg-gray-600 top-12 -bottom-4"></div>
+                <div class="absolute left-1/2 -translate-x-1/2 w-0.5 bg-gray-600 -top-4 h-4"></div>
               {/if}
               {#if item.isThreadStart && item.threadLength > 1}
-                <div class="absolute left-1/2 -translate-x-1/2 w-0.5 bg-gray-600 -top-4 h-4"></div>
+                <div class="absolute left-1/2 -translate-x-1/2 w-0.5 bg-gray-600 top-12 -bottom-4"></div>
               {/if}
               <img
                 src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
