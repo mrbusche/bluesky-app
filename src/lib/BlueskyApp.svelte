@@ -374,7 +374,7 @@
     <div>
       <header class="sticky top-0 bg-gray-900 bg-opacity-80 backdrop-blur-md z-20 border-b border-gray-700">
         <div class="flex justify-between items-center p-4">
-          <h1 class="text-xl font-bold text-blue-400">{session.handle}'s feed</h1>
+          <h1 class="text-xl font-bold text-blue-400">{session.handle ? `${session.handle}'s feed` : 'Your Feed'}</h1>
           <button
             on:click={handleLogout}
             class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-150 ease-in-out"
