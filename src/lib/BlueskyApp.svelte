@@ -1,15 +1,20 @@
 <script>
   import { onMount, tick } from 'svelte';
-  import EmbedRenderer from './EmbedRenderer.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
   import LoginForm from './LoginForm.svelte';
+  import FeedPost from './FeedPost.svelte';
+  import ThreadView from './ThreadView.svelte';
   import { AtpAgent } from '@atproto/api';
-  import { renderTextWithLinks, formatPostDate } from './utils.js';
 
   // --- Svelte State Management ---
   let agent = null;
   let session = null;
-  let posts = [];
+
+  // Raw posts from API (flat list for logic/seeking)
+  let rawPosts = [];
+  // Processed posts (grouped by thread for display)
+  let displayItems = [];
+
   let timelineCursor = null;
 
   // UI State
@@ -20,6 +25,9 @@
   // Profile view state
   let showProfile = false;
   let profileHandle = '';
+
+  // Thread view state
+  let activeThreadStartPost = null;
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -38,8 +46,8 @@
         await agent.resumeSession(sessionData);
         session = agent.session;
         console.log('Session resumed successfully.');
-        await fetchTimeline(); // Fetch the first page
-        await restoreScrollPosition(); // Restore position, fetching more if needed
+        await fetchTimeline();
+        await restoreScrollPosition();
       } catch (error) {
         console.error('Failed to resume session:', error);
         localStorage.removeItem(SESSION_KEY);
@@ -48,6 +56,43 @@
     }
     isLoading = false;
   });
+
+  // --- Feed Processing (Thread Grouping) ---
+  function processFeed(posts) {
+    const items = [];
+    let i = 0;
+
+    while (i < posts.length) {
+      const current = posts[i];
+      const thread = [current];
+      let j = i + 1;
+
+      // Check for chain of self-replies (Newest -> Oldest)
+      while (j < posts.length) {
+        const next = posts[j];
+        const prevInGroup = thread[thread.length - 1];
+
+        const sameAuthor = prevInGroup.post.author.did === next.post.author.did;
+        const isReplyToNext = prevInGroup.reply?.parent?.uri === next.post.uri;
+
+        if (sameAuthor && isReplyToNext) {
+          thread.push(next);
+          j++;
+        } else {
+          break;
+        }
+      }
+
+      if (thread.length > 1) {
+        items.push({ type: 'threadGroup', items: thread });
+        i = j;
+      } else {
+        items.push({ type: 'post', item: current });
+        i++;
+      }
+    }
+    return items;
+  }
 
   // --- Core Functions ---
   async function handleLoginSuccess({ agent: newAgent, session: newSession }) {
@@ -66,7 +111,8 @@
     localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
     localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
     session = null;
-    posts = [];
+    rawPosts = [];
+    displayItems = [];
     timelineCursor = null;
     window.location.reload();
   }
@@ -82,19 +128,19 @@
       }
 
       const response = await agent.getTimeline(params);
-
       if (response.data.feed.length > 0) {
-        // Filter out replies that are not self-replies (threaded posts)
         const newPosts = response.data.feed.filter((item) => {
           if (!item.post) return false;
-          if (!item.post.record.reply) return true; // top-level post
+          if (!item.post.record.reply) return true;
           const parentAuthorDid = item.reply?.parent?.author?.did;
           if (parentAuthorDid !== null && parentAuthorDid !== undefined) {
             return item.post.author.did === parentAuthorDid;
           }
           return false;
         });
-        posts = [...posts, ...newPosts];
+
+        rawPosts = [...rawPosts, ...newPosts];
+        displayItems = processFeed(rawPosts);
         timelineCursor = response.data.cursor;
       } else {
         timelineCursor = null;
@@ -102,39 +148,35 @@
     } catch (error) {
       const status = error?.response?.status || error?.status;
       console.error('Failed to fetch timeline:', { error, status, timelineCursor });
-      if (status === 502 || status === 503 || status === 504) {
-        console.error('Feed temporarily unavailable (server error). Retrying may work.');
-      } else if (status === 401) {
-        console.error('Session expired. Please log in again.');
+      if (status === 401) {
         localStorage.removeItem(SESSION_KEY);
         session = null;
         window.location.reload();
-      } else {
-        console.error('Could not load feed.');
       }
     } finally {
       isFetchingMore = false;
     }
   }
 
-  // --- Scroll Handling ---
+  // --- Scroll Handling (Restored Full Logic) ---
   let scrollSaveTimeout;
-
   function saveScrollPosition() {
     if (scrollSaveTimeout) clearTimeout(scrollSaveTimeout);
     scrollSaveTimeout = setTimeout(() => {
       const header = document.querySelector('header');
       const headerHeight = header ? header.offsetHeight : 0;
 
-      const firstVisiblePost = Array.from(document.querySelectorAll('main > article')).find(
+      // Use a more specific selector to target FeedPost articles
+      const firstVisiblePost = Array.from(document.querySelectorAll('main article')).find(
         (el) => el.getBoundingClientRect().bottom > headerHeight,
       );
 
       if (firstVisiblePost) {
         const postUri = firstVisiblePost.id;
-        // Save both URI (primary) and timestamp (fallback)
         localStorage.setItem(LAST_VIEWED_POST_URI_KEY, postUri);
-        const post = posts.find((item) => item.post.uri === postUri);
+
+        // Find in rawPosts to get the timestamp
+        const post = rawPosts.find((item) => item.post.uri === postUri);
         if (post?.post?.record?.createdAt) {
           const timestamp = new Date(post.post.record.createdAt).getTime();
           localStorage.setItem(LAST_VIEWED_POST_TIMESTAMP_KEY, timestamp.toString());
@@ -144,9 +186,8 @@
   }
 
   async function restoreScrollPosition() {
-    // Try URI-based approach first (original implementation)
+    // 1. Try URI-based approach first
     const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
-    
     if (savedUri) {
       isRestoringScroll = true;
       try {
@@ -154,9 +195,9 @@
         let attempts = 0;
         const MAX_FETCH_ATTEMPTS = 10;
 
-        // Try to find the post by URI, fetching more posts if needed
+        // Fetch loop: Keep getting more posts until we find the URI or hit the limit
         while (!elementToRestore && timelineCursor && attempts < MAX_FETCH_ATTEMPTS) {
-          await tick();
+          await tick(); // Wait for DOM render
           elementToRestore = document.getElementById(savedUri);
           if (!elementToRestore) {
             console.log(`Post ${savedUri} not found, fetching more...`);
@@ -174,7 +215,7 @@
             window.scrollBy(0, -headerHeight - 16);
           }
           isRestoringScroll = false;
-          return; // Successfully restored using URI
+          return;
         } else {
           console.warn(`Could not find post ${savedUri} after ${attempts} fetches. Trying timestamp fallback.`);
         }
@@ -183,64 +224,54 @@
       }
     }
 
-    // Fallback to timestamp-based approach if URI didn't work
+    // 2. Fallback to timestamp-based approach
     const savedTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
-    
     if (!savedTimestamp) {
       isRestoringScroll = false;
       return;
     }
 
     const targetTimestamp = parseInt(savedTimestamp, 10);
-    
+
     try {
       let closestPost = null;
       let attempts = 0;
       const MAX_FETCH_ATTEMPTS = 10;
 
-      // Function to find the closest post by timestamp
       const findClosestPost = () => {
         let closest = null;
         let minDiff = Infinity;
-        
-        for (const item of posts) {
+        // Search rawPosts (flat list) for the closest timestamp
+        for (const item of rawPosts) {
           if (item.post?.record?.createdAt) {
             const postTimestamp = new Date(item.post.record.createdAt).getTime();
             const diff = Math.abs(postTimestamp - targetTimestamp);
-            
             if (diff < minDiff) {
               minDiff = diff;
               closest = item;
             }
-            
-            // If we found a post with the exact timestamp, we can stop
             if (diff === 0) break;
           }
         }
-        
         return closest;
       };
 
-      // Try to find the closest post, fetching more posts if needed
       while (attempts < MAX_FETCH_ATTEMPTS) {
         await tick();
         closestPost = findClosestPost();
-        
+
         if (closestPost) {
           const closestTimestamp = new Date(closestPost.post.record.createdAt).getTime();
-          
-          // If we found an exact match or a very close match, use it
+          // Exact match or very close
           if (closestTimestamp === targetTimestamp) {
             break;
           }
-          
-          // If we found a post that's newer than the target and we have more to fetch, keep trying
+          // If closest post is newer than target, we likely need to fetch deeper into the past
           if (closestTimestamp > targetTimestamp && timelineCursor) {
             console.log(`Closest post is newer than target, fetching more...`);
             await fetchTimeline();
             attempts++;
           } else {
-            // We found the best match we can
             break;
           }
         } else if (timelineCursor) {
@@ -255,8 +286,10 @@
       if (closestPost) {
         const postTimestamp = new Date(closestPost.post.record.createdAt).getTime();
         const diffSeconds = Math.abs(postTimestamp - targetTimestamp) / 1000;
-        console.log(`Found closest post (${diffSeconds.toFixed(0)}s difference) after ${attempts} fetches using timestamp fallback. Scrolling into view.`);
-        
+        console.log(`Found closest post (${diffSeconds.toFixed(0)}s diff) after ${attempts} fetches. Scrolling.`);
+
+        // Wait for render ensuring ID exists in DOM
+        await tick();
         const elementToRestore = document.getElementById(closestPost.post.uri);
         if (elementToRestore) {
           const header = document.querySelector('header');
@@ -287,6 +320,7 @@
     saveScrollPosition();
   }
 
+  // --- View Helpers ---
   function showUserProfile(userHandle) {
     profileHandle = userHandle;
     showProfile = true;
@@ -296,29 +330,44 @@
     profileHandle = '';
   }
 
-  async function toggleLike(postUri, postCid, postIndex) {
-    if (!session) return;
+  function openThread(item) {
+    activeThreadStartPost = item;
+  }
+  function closeThread() {
+    activeThreadStartPost = null;
+  }
 
-    const post = posts[postIndex].post;
+  async function toggleLike(event) {
+    if (!session) return;
+    const { item } = event.detail;
+    const post = item.post;
     const isLiked = post.viewer?.like;
+
+    const updatePostInList = (list, targetUri, changes) => {
+      return list.map((entry) => {
+        if (entry.post.uri === targetUri) {
+          return { ...entry, post: { ...entry.post, ...changes } };
+        }
+        return entry;
+      });
+    };
 
     try {
       if (isLiked) {
         await agent.deleteLike(post.viewer.like);
-        posts[postIndex].post = {
-          ...post,
+        rawPosts = updatePostInList(rawPosts, post.uri, {
           likeCount: (post.likeCount || 1) - 1,
           viewer: { ...post.viewer, like: undefined },
-        };
+        });
       } else {
-        const response = await agent.like(postUri, postCid);
-        posts[postIndex].post = {
-          ...post,
+        const response = await agent.like(post.uri, post.cid);
+        rawPosts = updatePostInList(rawPosts, post.uri, {
           likeCount: (post.likeCount || 0) + 1,
           viewer: { ...post.viewer, like: response.uri },
-        };
+        });
       }
-      posts = posts;
+      // Regenerate display items to reflect the like count update
+      displayItems = processFeed(rawPosts);
     } catch (error) {
       console.error('Like/unlike error:', error);
     }
@@ -335,6 +384,10 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
+
+{#if activeThreadStartPost}
+  <ThreadView startPost={activeThreadStartPost} {agent} onClose={closeThread} onLike={toggleLike} onProfile={showUserProfile} />
+{/if}
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
@@ -356,84 +409,31 @@
       </header>
 
       <main>
-        {#each posts as item (item.post.uri)}
-          <article id={item.post.uri} class="p-4 border-b border-gray-700 flex space-x-4">
-            <div>
-              <img
-                src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
-                alt={item.post.author.displayName}
-                class="w-12 h-12 rounded-full bg-gray-600"
+        {#each displayItems as entry}
+          {#if entry.type === 'threadGroup'}
+            <div class="border-b border-gray-700 bg-gray-800/30">
+              <FeedPost
+                item={entry.items[entry.items.length - 1]}
+                on:like={toggleLike}
+                on:profile={(e) => showUserProfile(e.detail.handle)}
               />
-            </div>
-            <div class="flex-1 overflow-hidden">
-              {#if item.reason && item.reason.$type === 'app.bsky.feed.defs#reasonRepost'}
-                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
-                  <span>🔁</span>
-                  <span>Reposted by</span>
-                  <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
-                </div>
-              {/if}
-              {#if item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did}
-                <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
-                  <span>🧵</span>
-                  <span>Thread</span>
-                </div>
-              {/if}
-              <div class="flex items-center justify-between text-gray-400">
-                <div class="flex items-center space-x-2">
-                  <button
-                    on:click={() => showUserProfile(item.post.author.handle)}
-                    class="font-bold text-white truncate hover:underline cursor-pointer"
-                  >
-                    {item.post.author.displayName || item.post.author.handle}
-                  </button>
-                  <button
-                    on:click={() => showUserProfile(item.post.author.handle)}
-                    class="text-sm truncate hidden sm:inline hover:underline cursor-pointer"
-                  >
-                    @{item.post.author.handle}
-                  </button>
-                  <span class="text-gray-500">&middot;</span>
-                  <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
-                </div>
-                <button
-                  on:click={() => toggleLike(item.post.uri, item.post.cid, posts.indexOf(item))}
-                  class="flex items-center space-x-1 hover:text-red-400 transition-colors flex-shrink-0"
-                  aria-label={item.post.viewer?.like ? 'Unlike post' : 'Like post'}
-                >
-                  <span class="text-lg">{item.post.viewer?.like ? '❤️' : '🤍'}</span>
-                  {#if item.post.likeCount > 0}
-                    <span class="text-sm">{item.post.likeCount}</span>
-                  {/if}
-                </button>
-              </div>
-              <div class="text-white mt-1 whitespace-pre-wrap break-words" on:click={(e) => {
-                const target = e.target;
-                if (target.dataset.mentionDid) {
-                  const mentionText = target.textContent;
-                  // Extract handle from mention text (remove @ prefix if present)
-                  const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
-                  showUserProfile(handle);
-                }
-              }} on:keydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  const target = e.target;
-                  if (target.dataset.mentionDid) {
-                    const mentionText = target.textContent;
-                    const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
-                    showUserProfile(handle);
-                    e.preventDefault();
-                  }
-                }
-              }}>
-                {@html renderTextWithLinks(item.post.record.text, item.post.record.facets)}
+
+              <div
+                class="pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors"
+                on:click={() => openThread(entry.items[0])}
+                role="button"
+                tabindex="0"
+                on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && openThread(entry.items[0])}
+              >
+                <div class="w-0.5 h-full bg-gray-600 absolute left-10 top-0 bottom-0"></div>
+                <span class="ml-2">Show full thread ({entry.items.length} posts)</span>
               </div>
 
-              {#if item.post.embed}
-                <EmbedRenderer embed={item.post.embed} className="mt-3" clickableImages={true} showUserProfile={showUserProfile} />
-              {/if}
+              <FeedPost item={entry.items[0]} on:like={toggleLike} on:profile={(e) => showUserProfile(e.detail.handle)} />
             </div>
-          </article>
+          {:else}
+            <FeedPost item={entry.item} on:like={toggleLike} on:profile={(e) => showUserProfile(e.detail.handle)} />
+          {/if}
         {/each}
       </main>
 
@@ -443,7 +443,7 @@
         </div>
       {/if}
 
-      {#if !timelineCursor && posts.length > 0 && !isFetchingMore}
+      {#if !timelineCursor && displayItems.length > 0 && !isFetchingMore}
         <p class="text-center text-gray-500 py-8">End of feed.</p>
       {/if}
     </div>
@@ -454,21 +454,20 @@
 
 <style>
   :global(body) {
-    background-color: #1a202c; /* bg-gray-900 */
-    color: #e2e8f0; /* bg-gray-300 */
+    background-color: #1a202c;
+    color: #e2e8f0;
   }
-  /* Simple scrollbar styling */
   ::-webkit-scrollbar {
     width: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: #1a202c; /* bg-gray-800 */
+    background: #1a202c;
   }
   ::-webkit-scrollbar-thumb {
-    background: #4a5568; /* bg-gray-600 */
+    background: #4a5568;
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #718096; /* bg-gray-500 */
+    background: #718096;
   }
 </style>
