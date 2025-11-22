@@ -3,8 +3,10 @@
   import { renderTextWithLinks, formatPostDate } from './utils.js';
   import { createEventDispatcher } from 'svelte';
 
-  export let item; // The feed item (post + reply/reason context)
-  export let isThreadView = false; // Styling adjustment for thread view
+  export let item;
+  export let isThreadView = false;
+  export let connectUp = false;
+  export let connectDown = false;
 
   const dispatch = createEventDispatcher();
 
@@ -28,15 +30,24 @@
   }
 </script>
 
-<article class="p-4 border-b border-gray-700 flex space-x-4 {isThreadView ? 'bg-gray-900' : ''}" id={item.post.uri}>
-  <div class="flex-shrink-0">
+<article class="p-4 border-b border-gray-700 flex space-x-4 {isThreadView ? 'bg-gray-900' : ''} relative" id={item.post.uri}>
+  <div class="flex-shrink-0 flex flex-col items-center relative self-stretch" style="width: 48px;">
+    {#if connectUp}
+      <div class="absolute top-[-16px] h-[16px] w-0.5 bg-gray-600 left-1/2 -translate-x-1/2"></div>
+    {/if}
+
     <img
       src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
       alt={item.post.author.displayName}
-      class="w-12 h-12 rounded-full bg-gray-600 cursor-pointer"
+      class="w-12 h-12 rounded-full bg-gray-600 cursor-pointer z-10 relative"
       on:click|stopPropagation={() => handleProfileClick(item.post.author.handle)}
     />
+
+    {#if connectDown}
+      <div class="absolute top-[48px] bottom-[-16px] w-0.5 bg-gray-600 left-1/2 -translate-x-1/2"></div>
+    {/if}
   </div>
+
   <div class="flex-1 overflow-hidden">
     {#if item.reason && item.reason.$type === 'app.bsky.feed.defs#reasonRepost'}
       <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">

@@ -9,9 +9,7 @@
   let agent = null;
   let session = null;
 
-  // Raw posts from API (flat list for logic/seeking)
   let rawPosts = [];
-  // Processed posts (grouped by thread for display)
   let displayItems = [];
 
   let timelineCursor = null;
@@ -213,7 +211,6 @@
       }
     }
 
-    // Fallback to timestamp-based approach
     const savedTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
     if (!savedTimestamp) {
       isRestoringScroll = false;
@@ -307,8 +304,6 @@
     profileHandle = '';
   }
 
-  // openThread/closeThread removed
-
   async function toggleLike(event) {
     if (!session) return;
     const { item } = event.detail;
@@ -381,6 +376,7 @@
             <div class="border-b border-gray-700 bg-gray-800/30">
               <FeedPost
                 item={entry.items[entry.items.length - 1]}
+                connectDown={true}
                 on:like={toggleLike}
                 on:profile={(e) => showUserProfile(e.detail.handle)}
               />
@@ -389,11 +385,11 @@
                 href="/thread/{encodeURIComponent(entry.items[0].post.uri)}"
                 class="block pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors relative"
               >
-                <div class="w-0.5 h-full bg-gray-600 absolute left-10 top-0 bottom-0"></div>
+                <div class="w-0.5 h-full bg-gray-600 absolute left-[39px] top-0 bottom-0"></div>
                 <span class="ml-2">Show full thread ({entry.items.length} posts)</span>
               </a>
 
-              <FeedPost item={entry.items[0]} on:like={toggleLike} on:profile={(e) => showUserProfile(e.detail.handle)} />
+              <FeedPost item={entry.items[0]} connectUp={true} on:like={toggleLike} on:profile={(e) => showUserProfile(e.detail.handle)} />
             </div>
           {:else}
             <FeedPost item={entry.item} on:like={toggleLike} on:profile={(e) => showUserProfile(e.detail.handle)} />
