@@ -5,7 +5,7 @@
   import { AtpAgent } from '@atproto/api';
   import FeedPost from '$lib/FeedPost.svelte';
   import UserProfileModal from '$lib/UserProfileModal.svelte';
-  import { toggleLike as toggleLikeUtil } from '$lib/utils';
+  import { toggleLike as toggleLikeUtil, flattenThread } from '$lib/utils';
   import { BLUESKY_SERVICE, SESSION_KEY } from '$lib/constants.js';
   import '../../../app.css';
 
@@ -54,29 +54,6 @@
     } finally {
       loading = false;
     }
-  }
-
-  function flattenThread(thread) {
-    let posts = [];
-    if (thread.parent) {
-      posts = [...flattenThread(thread.parent)];
-    }
-    if (thread.post) {
-      posts.push({
-        post: thread.post,
-        reply: thread.parent ? { parent: thread.parent.post } : undefined,
-      });
-    }
-    if (thread.replies && thread.replies.length > 0) {
-      const sortedReplies = thread.replies.sort((a, b) => new Date(a.post.record.createdAt) - new Date(b.post.record.createdAt));
-      for (const reply of sortedReplies) {
-        posts.push({
-          post: reply.post,
-          reply: { parent: thread.post },
-        });
-      }
-    }
-    return posts;
   }
 
   // Updated toggleLike signature

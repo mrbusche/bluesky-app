@@ -120,3 +120,52 @@ export async function toggleLike(agent, post, updateStateCallback) {
     throw error;
   }
 }
+
+// Flatten the recursive thread structure into a linear array for display
+export function flattenThread(thread) {
+  let posts = [];
+
+  // Add parents (recursively)
+  if (thread.parent) {
+    posts = [...flattenThread(thread.parent)];
+  }
+
+  // Add current post
+  if (thread.post) {
+    // Convert to the format FeedPost expects (similar to timeline item)
+    posts.push({
+      post: thread.post,
+      // We don't always have reason/reply context in the thread view the same way,
+      // but we construct a basic item
+      reply: thread.parent ? { parent: thread.parent.post } : undefined,
+    });
+  }
+
+  // Add replies (we generally just want the linear conversation,
+  // but if there are multiple replies, we might just show the main chain or immediate replies)
+  // For this view, let's strictly show the chain leading to the selected post
+  // and maybe immediate replies if the selected post is the parent.
+  // However, the requirement is "view all posts in the thread".
+  // A linear conversation usually implies following the replies of the author.
+
+  if (thread.replies && thread.replies.length > 0) {
+    // Sort by time
+    const sortedReplies = thread.replies.sort((a, b) => new Date(a.post.record.createdAt) - new Date(b.post.record.createdAt));
+
+    // We add all replies to the flattened list
+    for (const reply of sortedReplies) {
+      // We only recurse if it's part of the same conversation "thread" visually
+      // For simplicity in this view, let's flatten one level deep or
+      // checking if it's the same author to keep the "Thread" feel
+      posts.push({
+        post: reply.post,
+        reply: { parent: thread.post },
+      });
+
+      // If we wanted deep recursion for replies-to-replies:
+      // posts = [...posts, ...flattenReplies(reply)];
+    }
+  }
+
+  return posts;
+}
