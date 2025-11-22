@@ -14,12 +14,12 @@
   let threadUri = '';
 
   const BLUESKY_SERVICE = 'https://bsky.social';
-  const SESSION_KEY = 'bluesky-session';
+  const SESSION_KEY = 'blueskySession';
 
   onMount(async () => {
     // Get the URI from URL params
     threadUri = $page.url.searchParams.get('uri') || '';
-    
+
     if (!threadUri) {
       error = 'No thread URI provided';
       return;
@@ -146,13 +146,7 @@
   <div class="max-w-2xl mx-auto">
     <!-- Header -->
     <div class="sticky top-0 z-10 bg-gray-800 border-b border-gray-700 p-4 flex items-center space-x-4">
-      <button
-        on:click={goBack}
-        class="text-blue-400 hover:text-blue-300 text-lg"
-        aria-label="Go back"
-      >
-        ← Back
-      </button>
+      <button on:click={goBack} class="text-blue-400 hover:text-blue-300 text-lg" aria-label="Go back"> ← Back </button>
       <h1 class="text-xl font-bold">Thread</h1>
     </div>
 
@@ -184,7 +178,10 @@
                     >
                       {item.post.author.displayName || item.post.author.handle}
                     </button>
-                    <button on:click={() => showUserProfile(item.post.author.handle)} class="text-xs truncate hover:underline cursor-pointer">
+                    <button
+                      on:click={() => showUserProfile(item.post.author.handle)}
+                      class="text-xs truncate hover:underline cursor-pointer"
+                    >
                       @{item.post.author.handle}
                     </button>
                     <span class="text-gray-500">&middot;</span>

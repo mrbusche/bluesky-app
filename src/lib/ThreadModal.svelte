@@ -2,6 +2,7 @@
   import Modal from './Modal.svelte';
   import EmbedRenderer from './EmbedRenderer.svelte';
   import { renderTextWithLinks, formatPostDate } from './utils.js';
+  import { AtpAgent } from '@atproto/api';
 
   export let open = false;
   export let threadUri = '';
@@ -14,15 +15,33 @@
   let error = '';
   let threadPosts = [];
 
+  async function getActiveAgent() {
+    if (agent && agent.session) return agent;
+
+    if (session) {
+      try {
+        const newAgent = new AtpAgent({ service: 'https://bsky.social' });
+        await newAgent.resumeSession(session);
+        return newAgent;
+      } catch (e) {
+        console.error('Failed to resume session in ThreadModal:', e);
+      }
+    }
+    return agent;
+  }
+
   async function loadThread() {
-    if (!open || !threadUri || !agent) return;
+    if (!open || !threadUri) return;
 
     isLoading = true;
     error = '';
     threadPosts = [];
 
     try {
-      const response = await agent.getPostThread({ uri: threadUri });
+      const activeAgent = await getActiveAgent();
+      if (!activeAgent) throw new Error('No active session');
+
+      const response = await activeAgent.getPostThread({ uri: threadUri });
 
       if (response.data.thread) {
         // Build the thread array from the tree structure
@@ -76,7 +95,7 @@
   }
 
   // Load thread when modal opens or threadUri changes
-  $: if (open && threadUri && agent) {
+  $: if (open && threadUri) {
     loadThread();
   }
 
@@ -85,21 +104,22 @@
   }
 
   async function toggleLike(postUri, postCid, postIndex) {
-    if (!session || !agent) return;
+    const activeAgent = await getActiveAgent();
+    if (!activeAgent || !activeAgent.session) return;
 
     const post = threadPosts[postIndex].post;
     const isLiked = post.viewer?.like;
 
     try {
       if (isLiked) {
-        await agent.deleteLike(post.viewer.like);
+        await activeAgent.deleteLike(post.viewer.like);
         threadPosts[postIndex].post = {
           ...post,
           likeCount: (post.likeCount || 1) - 1,
           viewer: { ...post.viewer, like: undefined },
         };
       } else {
-        const response = await agent.like(postUri, postCid);
+        const response = await activeAgent.like(postUri, postCid);
         threadPosts[postIndex].post = {
           ...post,
           likeCount: (post.likeCount || 0) + 1,
