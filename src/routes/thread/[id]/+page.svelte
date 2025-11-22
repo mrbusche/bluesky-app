@@ -16,17 +16,14 @@
   let loading = true;
   let error = '';
 
-  // Profile modal state
   let showProfile = false;
   let profileHandle = '';
 
-  // The ID parameter is the URI of the post
   $: uri = decodeURIComponent($page.params.id);
 
   onMount(async () => {
     const savedSession = localStorage.getItem(SESSION_KEY);
     if (!savedSession) {
-      // No session, redirect to home
       goto('/');
       return;
     }
@@ -62,24 +59,17 @@
 
   function flattenThread(thread) {
     let posts = [];
-
-    // Add parents (recursively)
     if (thread.parent) {
       posts = [...flattenThread(thread.parent)];
     }
-
-    // Add current post
     if (thread.post) {
       posts.push({
         post: thread.post,
         reply: thread.parent ? { parent: thread.parent.post } : undefined,
       });
     }
-
-    // Add replies
     if (thread.replies && thread.replies.length > 0) {
       const sortedReplies = thread.replies.sort((a, b) => new Date(a.post.record.createdAt) - new Date(b.post.record.createdAt));
-
       for (const reply of sortedReplies) {
         posts.push({
           post: reply.post,
@@ -87,17 +77,15 @@
         });
       }
     }
-
     return posts;
   }
 
-  async function toggleLike(event) {
+  // Updated toggleLike signature
+  async function toggleLike({ item }) {
     if (!session || !agent) return;
-    const { item } = event.detail;
     const post = item.post;
     const isLiked = post.viewer?.like;
 
-    // Optimistic update
     threadPosts = threadPosts.map((entry) => {
       if (entry.post.uri === post.uri) {
         const likeCount = (entry.post.likeCount || 0) + (isLiked ? -1 : 1);
@@ -116,14 +104,12 @@
     try {
       if (isLiked) {
         await agent.deleteLike(post.viewer.like);
-        // Finalize update (remove 'pending' URI or keep undefined)
         threadPosts = threadPosts.map((entry) => {
           if (entry.post.uri === post.uri) return { ...entry, post: { ...entry.post, viewer: { ...entry.post.viewer, like: undefined } } };
           return entry;
         });
       } else {
         const response = await agent.like(post.uri, post.cid);
-        // Finalize update with real URI
         threadPosts = threadPosts.map((entry) => {
           if (entry.post.uri === post.uri)
             return { ...entry, post: { ...entry.post, viewer: { ...entry.post.viewer, like: response.uri } } };
@@ -132,7 +118,6 @@
       }
     } catch (error) {
       console.error('Like/unlike error:', error);
-      // Revert on error (simplified)
       fetchThread();
     }
   }
@@ -165,7 +150,7 @@
       </div>
     {:else}
       {#each threadPosts as item (item.post.uri)}
-        <FeedPost {item} isThreadView={true} on:like={toggleLike} on:profile={(e) => handleUserProfile(e.detail.handle)} />
+        <FeedPost {item} isThreadView={true} onlike={toggleLike} onprofile={(e) => handleUserProfile(e.handle)} />
         {#if item !== threadPosts[threadPosts.length - 1]}
           <div class="w-0.5 h-4 bg-gray-700 mx-auto my-0"></div>
         {/if}

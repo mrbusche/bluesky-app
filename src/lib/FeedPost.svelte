@@ -1,21 +1,15 @@
 <script>
   import EmbedRenderer from './EmbedRenderer.svelte';
   import { renderTextWithLinks, formatPostDate } from './utils.js';
-  import { createEventDispatcher } from 'svelte';
 
-  export let item;
-  export let isThreadView = false;
-  export let connectUp = false;
-  export let connectDown = false;
-
-  const dispatch = createEventDispatcher();
+  let { item, isThreadView = false, connectUp = false, connectDown = false, onlike, onprofile } = $props();
 
   function handleLike() {
-    dispatch('like', { item });
+    onlike?.({ item });
   }
 
   function handleProfileClick(handle) {
-    dispatch('profile', { handle });
+    onprofile?.({ handle });
   }
 
   function handleMentionClick(e) {
@@ -40,7 +34,10 @@
       src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
       alt={item.post.author.displayName}
       class="w-12 h-12 rounded-full bg-gray-600 cursor-pointer z-10 relative"
-      on:click|stopPropagation={() => handleProfileClick(item.post.author.handle)}
+      onclick={(e) => {
+        e.stopPropagation();
+        handleProfileClick(item.post.author.handle);
+      }}
     />
 
     {#if connectDown}
@@ -67,13 +64,19 @@
     <div class="flex items-center justify-between text-gray-400">
       <div class="flex items-center space-x-2 overflow-hidden">
         <button
-          on:click|stopPropagation={() => handleProfileClick(item.post.author.handle)}
+          onclick={(e) => {
+            e.stopPropagation();
+            handleProfileClick(item.post.author.handle);
+          }}
           class="font-bold text-white truncate hover:underline cursor-pointer"
         >
           {item.post.author.displayName || item.post.author.handle}
         </button>
         <button
-          on:click|stopPropagation={() => handleProfileClick(item.post.author.handle)}
+          onclick={(e) => {
+            e.stopPropagation();
+            handleProfileClick(item.post.author.handle);
+          }}
           class="text-sm truncate hidden sm:inline hover:underline cursor-pointer"
         >
           @{item.post.author.handle}
@@ -83,7 +86,10 @@
       </div>
 
       <button
-        on:click|stopPropagation={handleLike}
+        onclick={(e) => {
+          e.stopPropagation();
+          handleLike();
+        }}
         class="flex items-center space-x-1 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
         aria-label={item.post.viewer?.like ? 'Unlike post' : 'Like post'}
       >
@@ -96,8 +102,8 @@
 
     <div
       class="text-white mt-1 whitespace-pre-wrap break-words"
-      on:click={handleMentionClick}
-      on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleMentionClick(e)}
+      onclick={handleMentionClick}
+      onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleMentionClick(e)}
       role="button"
       tabindex="0"
     >

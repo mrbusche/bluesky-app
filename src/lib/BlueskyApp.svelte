@@ -61,7 +61,6 @@
       const thread = [current];
       let j = i + 1;
 
-      // Check for chain of self-replies (Newest -> Oldest)
       while (j < posts.length) {
         const next = posts[j];
         const prevInGroup = thread[thread.length - 1];
@@ -304,9 +303,8 @@
     profileHandle = '';
   }
 
-  async function toggleLike(event) {
+  async function toggleLike({ item }) {
     if (!session) return;
-    const { item } = event.detail;
     const post = item.post;
     const isLiked = post.viewer?.like;
 
@@ -377,8 +375,8 @@
               <FeedPost
                 item={entry.items[entry.items.length - 1]}
                 connectDown={true}
-                on:like={toggleLike}
-                on:profile={(e) => showUserProfile(e.detail.handle)}
+                onlike={toggleLike}
+                onprofile={(e) => showUserProfile(e.handle)}
               />
 
               <a
@@ -389,10 +387,10 @@
                 <span class="ml-2">Show full thread ({entry.items.length} posts)</span>
               </a>
 
-              <FeedPost item={entry.items[0]} connectUp={true} on:like={toggleLike} on:profile={(e) => showUserProfile(e.detail.handle)} />
+              <FeedPost item={entry.items[0]} connectUp={true} onlike={toggleLike} onprofile={(e) => showUserProfile(e.handle)} />
             </div>
           {:else}
-            <FeedPost item={entry.item} on:like={toggleLike} on:profile={(e) => showUserProfile(e.detail.handle)} />
+            <FeedPost item={entry.item} onlike={toggleLike} onprofile={(e) => showUserProfile(e.handle)} />
           {/if}
         {/each}
       </main>
