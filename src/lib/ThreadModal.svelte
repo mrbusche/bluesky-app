@@ -76,7 +76,7 @@
   }
 
   // Load thread when modal opens or threadUri changes
-  $: if (open && threadUri) {
+  $: if (open && threadUri && agent) {
     loadThread();
   }
 

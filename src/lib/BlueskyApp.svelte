@@ -39,6 +39,7 @@
         const sessionData = JSON.parse(savedSession);
         await agent.resumeSession(sessionData);
         session = agent.session;
+        agent = agent; // Force reactivity update for child components
         console.log('Session resumed successfully.');
         await fetchTimeline(); // Fetch the first page
         await restoreScrollPosition(); // Restore position, fetching more if needed
