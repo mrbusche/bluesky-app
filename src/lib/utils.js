@@ -84,3 +84,39 @@ export const formatPostDate = (dateString) => {
     return `${month}/${day}/${year}`;
   }
 };
+
+export async function toggleLike(agent, post, updateStateCallback) {
+  if (!agent || !post) return;
+
+  const isLiked = !!post.viewer?.like;
+  const uri = post.uri;
+  const cid = post.cid;
+
+  // Optimistic update
+  const optimisticLikeCount = (post.likeCount || 0) + (isLiked ? -1 : 1);
+  const optimisticViewer = { ...post.viewer, like: isLiked ? undefined : 'pending' };
+
+  updateStateCallback(uri, {
+    likeCount: optimisticLikeCount < 0 ? 0 : optimisticLikeCount,
+    viewer: optimisticViewer,
+  });
+
+  try {
+    if (isLiked) {
+      await agent.deleteLike(post.viewer.like);
+      // Final update (success) - confirm removal
+      updateStateCallback(uri, {
+        viewer: { ...post.viewer, like: undefined },
+      });
+    } else {
+      const response = await agent.like(uri, cid);
+      // Final update (success) - confirm addition with new URI
+      updateStateCallback(uri, {
+        viewer: { ...post.viewer, like: response.uri },
+      });
+    }
+  } catch (error) {
+    console.error('Like/unlike error:', error);
+    throw error;
+  }
+}

@@ -5,6 +5,7 @@
   import { AtpAgent } from '@atproto/api';
   import FeedPost from '$lib/FeedPost.svelte';
   import UserProfileModal from '$lib/UserProfileModal.svelte';
+  import { toggleLike as toggleLikeUtil } from '$lib/utils';
   import '../../../app.css';
 
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -84,40 +85,23 @@
   async function toggleLike({ item }) {
     if (!session || !agent) return;
     const post = item.post;
-    const isLiked = post.viewer?.like;
-
-    threadPosts = threadPosts.map((entry) => {
-      if (entry.post.uri === post.uri) {
-        const likeCount = (entry.post.likeCount || 0) + (isLiked ? -1 : 1);
-        return {
-          ...entry,
-          post: {
-            ...entry.post,
-            likeCount: likeCount < 0 ? 0 : likeCount,
-            viewer: { ...entry.post.viewer, like: isLiked ? undefined : 'pending' },
-          },
-        };
-      }
-      return entry;
-    });
 
     try {
-      if (isLiked) {
-        await agent.deleteLike(post.viewer.like);
+      await toggleLikeUtil(agent, post, (uri, changes) => {
         threadPosts = threadPosts.map((entry) => {
-          if (entry.post.uri === post.uri) return { ...entry, post: { ...entry.post, viewer: { ...entry.post.viewer, like: undefined } } };
+          if (entry.post.uri === uri) {
+            return {
+              ...entry,
+              post: {
+                ...entry.post,
+                ...changes,
+              },
+            };
+          }
           return entry;
         });
-      } else {
-        const response = await agent.like(post.uri, post.cid);
-        threadPosts = threadPosts.map((entry) => {
-          if (entry.post.uri === post.uri)
-            return { ...entry, post: { ...entry.post, viewer: { ...entry.post.viewer, like: response.uri } } };
-          return entry;
-        });
-      }
+      });
     } catch (error) {
-      console.error('Like/unlike error:', error);
       fetchThread();
     }
   }

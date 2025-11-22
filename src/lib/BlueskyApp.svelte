@@ -4,6 +4,7 @@
   import LoginForm from './LoginForm.svelte';
   import FeedPost from './FeedPost.svelte';
   import { AtpAgent } from '@atproto/api';
+  import { toggleLike as toggleLikeUtil } from './utils.js';
 
   // --- Svelte State Management ---
   let agent = null;
@@ -306,7 +307,6 @@
   async function toggleLike({ item }) {
     if (!session) return;
     const post = item.post;
-    const isLiked = post.viewer?.like;
 
     const updatePostInList = (list, targetUri, changes) => {
       return list.map((entry) => {
@@ -318,22 +318,12 @@
     };
 
     try {
-      if (isLiked) {
-        await agent.deleteLike(post.viewer.like);
-        rawPosts = updatePostInList(rawPosts, post.uri, {
-          likeCount: (post.likeCount || 1) - 1,
-          viewer: { ...post.viewer, like: undefined },
-        });
-      } else {
-        const response = await agent.like(post.uri, post.cid);
-        rawPosts = updatePostInList(rawPosts, post.uri, {
-          likeCount: (post.likeCount || 0) + 1,
-          viewer: { ...post.viewer, like: response.uri },
-        });
-      }
-      displayItems = processFeed(rawPosts);
+      await toggleLikeUtil(agent, post, (uri, changes) => {
+        rawPosts = updatePostInList(rawPosts, uri, changes);
+        displayItems = processFeed(rawPosts);
+      });
     } catch (error) {
-      console.error('Like/unlike error:', error);
+      // Error is logged in utility
     }
   }
 </script>
