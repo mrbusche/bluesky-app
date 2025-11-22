@@ -18,8 +18,7 @@
 
   onMount(async () => {
     // Get the URI from URL params
-    const params = new URLSearchParams(window.location.search);
-    threadUri = params.get('uri') || '';
+    threadUri = $page.url.searchParams.get('uri') || '';
     
     if (!threadUri) {
       error = 'No thread URI provided';

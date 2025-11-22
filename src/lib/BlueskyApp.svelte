@@ -4,7 +4,6 @@
   import { page } from '$app/stores';
   import EmbedRenderer from './EmbedRenderer.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
-  import ThreadModal from './ThreadModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import { AtpAgent } from '@atproto/api';
   import { renderTextWithLinks, formatPostDate } from './utils.js';
@@ -23,10 +22,6 @@
   // Profile view state
   let showProfile = false;
   let profileHandle = '';
-
-  // Thread view state
-  let showThread = false;
-  let threadUri = '';
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -325,11 +320,6 @@
     goto(`/thread?uri=${encodeURIComponent(uri)}`);
   }
 
-  function closeThread() {
-    showThread = false;
-    threadUri = '';
-  }
-
   // Group posts into threads, showing only first and last posts for threads with multiple posts
   function groupPostsIntoThreads(allPosts) {
     const postsByUri = new Map();
@@ -474,7 +464,6 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
-<ThreadModal open={showThread} {threadUri} {agent} {session} onClose={closeThread} {showUserProfile} />
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
