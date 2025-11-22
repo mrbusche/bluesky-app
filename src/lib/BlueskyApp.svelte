@@ -1,5 +1,7 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import EmbedRenderer from './EmbedRenderer.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
   import ThreadModal from './ThreadModal.svelte';
@@ -52,6 +54,14 @@
       }
     }
     isLoading = false;
+
+    // Check for profile URL parameter
+    const profileParam = $page.url.searchParams.get('profile');
+    if (profileParam) {
+      showUserProfile(profileParam);
+      // Clear the URL parameter
+      goto('/', { replaceState: true });
+    }
   });
 
   // --- Core Functions ---
@@ -311,8 +321,8 @@
   }
 
   function showThreadModal(uri) {
-    threadUri = uri;
-    showThread = true;
+    // Navigate to thread page instead of showing modal
+    goto(`/thread?uri=${encodeURIComponent(uri)}`);
   }
 
   function closeThread() {
