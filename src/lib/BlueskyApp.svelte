@@ -5,6 +5,7 @@
   import FeedPost from './FeedPost.svelte';
   import { AtpAgent } from '@atproto/api';
   import { toggleLike as toggleLikeUtil } from './utils.js';
+  import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
 
   // --- Svelte State Management ---
   let agent = null;
@@ -25,10 +26,8 @@
   let profileHandle = '';
 
   // --- Constants ---
-  const BLUESKY_SERVICE = 'https://bsky.social';
   const LAST_VIEWED_POST_TIMESTAMP_KEY = 'blueskyLastViewedPostTimestamp';
   const LAST_VIEWED_POST_URI_KEY = 'blueskyLastViewedPostUri';
-  const SESSION_KEY = 'blueskySession';
 
   // --- Lifecycle & Initialization ---
   onMount(async () => {

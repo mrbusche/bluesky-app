@@ -6,10 +6,8 @@
   import FeedPost from '$lib/FeedPost.svelte';
   import UserProfileModal from '$lib/UserProfileModal.svelte';
   import { toggleLike as toggleLikeUtil } from '$lib/utils';
+  import { BLUESKY_SERVICE, SESSION_KEY } from '$lib/constants.js';
   import '../../../app.css';
-
-  const BLUESKY_SERVICE = 'https://bsky.social';
-  const SESSION_KEY = 'blueskySession';
 
   let agent = null;
   let session = null;

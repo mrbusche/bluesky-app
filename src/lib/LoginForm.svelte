@@ -3,6 +3,7 @@
 
   // Import the official Bluesky SDK
   import { AtpAgent } from '@atproto/api';
+  import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
 
   export let onLoginSuccess = undefined;
 
@@ -15,8 +16,6 @@
   let loginError = '';
 
   // Constants
-  const BLUESKY_SERVICE = 'https://bsky.social';
-  const SESSION_KEY = 'blueskySession';
   const LOGIN_TIMEOUT_MS = 15000; // 15 seconds timeout for login
 
   async function handleLogin() {
