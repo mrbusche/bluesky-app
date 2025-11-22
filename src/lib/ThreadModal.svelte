@@ -117,19 +117,19 @@
   let touchStartY = 0;
 
   function handleTouchStart(e) {
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
   }
 
   function handleTouchEnd(e) {
-    const touchEndX = e.changedTouches[0].screenX;
-    const touchEndY = e.changedTouches[0].screenY;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
 
     const diffX = touchEndX - touchStartX;
     const diffY = Math.abs(touchEndY - touchStartY);
 
-    // Swipe right (positive X diff), significant distance (>100), not too much vertical scroll (<100)
-    if (diffX > 100 && diffY < 100) {
+    // Swipe right (positive X diff), significant distance (>75), not too much vertical scroll (<50)
+    if (diffX > 75 && diffY < 50) {
       close();
     }
   }
@@ -140,8 +140,8 @@
   {close}
   ariaLabel="Thread dialog"
   containerClass="bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
-  {handleTouchStart}
-  {handleTouchEnd}
+  on:touchstart={handleTouchStart}
+  on:touchend={handleTouchEnd}
 >
   <!-- Header -->
   <div class="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
