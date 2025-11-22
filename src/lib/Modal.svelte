@@ -8,6 +8,8 @@
   export const ariaLabel = 'Dialog';
   export const containerClass = 'bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6';
   export let close = undefined;
+  export let handleTouchStart = undefined;
+  export let handleTouchEnd = undefined;
 
   function handleClose() {
     close?.();
@@ -58,7 +60,14 @@
     aria-label={ariaLabel}
     on:keydown={handleOverlayKeydown}
   >
-    <div role="dialog" aria-modal="true" aria-label={ariaLabel} class={containerClass}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={ariaLabel}
+      class={containerClass}
+      on:touchstart={handleTouchStart}
+      on:touchend={handleTouchEnd}
+    >
       <slot />
     </div>
   </div>

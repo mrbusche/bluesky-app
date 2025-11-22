@@ -140,6 +140,8 @@
   {close}
   ariaLabel="Thread dialog"
   containerClass="bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
+  {handleTouchStart}
+  {handleTouchEnd}
 >
   <!-- Header -->
   <div class="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
@@ -148,7 +150,7 @@
   </div>
 
   <!-- Content -->
-  <div class="flex-1 overflow-y-auto p-4" on:touchstart={handleTouchStart} on:touchend={handleTouchEnd}>
+  <div class="flex-1 overflow-y-auto p-4">
     {#if isLoading}
       <div class="flex justify-center items-center py-8">
         <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
