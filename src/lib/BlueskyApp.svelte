@@ -316,10 +316,37 @@
       });
     };
 
+    const updatePostInDisplayItems = (items, targetUri, changes) => {
+      return items.map((entry) => {
+        if (entry.type === 'post') {
+          if (entry.item.post.uri === targetUri) {
+            return {
+              ...entry,
+              item: {
+                ...entry.item,
+                post: { ...entry.item.post, ...changes },
+              },
+            };
+          }
+        } else if (entry.type === 'threadGroup') {
+          const index = entry.items.findIndex((p) => p.post.uri === targetUri);
+          if (index !== -1) {
+            const newItems = [...entry.items];
+            newItems[index] = {
+              ...newItems[index],
+              post: { ...newItems[index].post, ...changes },
+            };
+            return { ...entry, items: newItems };
+          }
+        }
+        return entry;
+      });
+    };
+
     try {
       await toggleLikeUtil(agent, post, (uri, changes) => {
         rawPosts = updatePostInList(rawPosts, uri, changes);
-        displayItems = processFeed(rawPosts);
+        displayItems = updatePostInDisplayItems(displayItems, uri, changes);
       });
     } catch (error) {
       // Error is logged in utility

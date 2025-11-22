@@ -20,6 +20,10 @@
 
   $: uri = decodeURIComponent($page.params.id);
 
+  $: if (agent && uri) {
+    fetchThread();
+  }
+
   onMount(async () => {
     const savedSession = localStorage.getItem(SESSION_KEY);
     if (!savedSession) {
@@ -32,8 +36,6 @@
       const sessionData = JSON.parse(savedSession);
       await agent.resumeSession(sessionData);
       session = agent.session;
-
-      await fetchThread();
     } catch (e) {
       console.error('Session resume failed or thread fetch failed', e);
       error = 'Could not load thread. Please try logging in again.';
