@@ -18,26 +18,32 @@
       <span class="font-bold text-white">{quotedPost.author?.displayName || quotedPost.author?.handle}</span>
       <span class="truncate">@{quotedPost.author?.handle}</span>
     </div>
-    <div class="text-white mt-2 text-sm whitespace-pre-wrap break-words" on:click={(e) => {
-      if (showUserProfile) {
-        const target = e.target;
-        if (target.dataset.mentionDid) {
-          const mentionText = target.textContent;
-          const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
-          showUserProfile(handle);
+    <div
+      class="text-white mt-2 text-sm whitespace-pre-wrap break-words"
+      role="button"
+      tabindex="0"
+      on:click={(e) => {
+        if (showUserProfile) {
+          const target = e.target;
+          if (target.dataset.mentionDid) {
+            const mentionText = target.textContent;
+            const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
+            showUserProfile(handle);
+          }
         }
-      }
-    }} on:keydown={(e) => {
-      if (showUserProfile && (e.key === 'Enter' || e.key === ' ')) {
-        const target = e.target;
-        if (target.dataset.mentionDid) {
-          const mentionText = target.textContent;
-          const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
-          showUserProfile(handle);
-          e.preventDefault();
+      }}
+      on:keydown={(e) => {
+        if (showUserProfile && (e.key === 'Enter' || e.key === ' ')) {
+          const target = e.target;
+          if (target.dataset.mentionDid) {
+            const mentionText = target.textContent;
+            const handle = mentionText.startsWith('@') ? mentionText.slice(1) : mentionText;
+            showUserProfile(handle);
+            e.preventDefault();
+          }
         }
-      }
-    }}>
+      }}
+    >
       {@html renderTextWithLinks(quotedPost.value?.text, quotedPost.value?.facets)}
     </div>
 
