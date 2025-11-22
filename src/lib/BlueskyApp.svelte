@@ -3,7 +3,6 @@
   import UserProfileModal from './UserProfileModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import FeedPost from './FeedPost.svelte';
-  import ThreadView from './ThreadView.svelte';
   import { AtpAgent } from '@atproto/api';
 
   // --- Svelte State Management ---
@@ -25,9 +24,6 @@
   // Profile view state
   let showProfile = false;
   let profileHandle = '';
-
-  // Thread view state
-  let activeThreadStartPost = null;
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -158,7 +154,7 @@
     }
   }
 
-  // --- Scroll Handling (Restored Full Logic) ---
+  // --- Scroll Handling ---
   let scrollSaveTimeout;
   function saveScrollPosition() {
     if (scrollSaveTimeout) clearTimeout(scrollSaveTimeout);
@@ -166,7 +162,6 @@
       const header = document.querySelector('header');
       const headerHeight = header ? header.offsetHeight : 0;
 
-      // Use a more specific selector to target FeedPost articles
       const firstVisiblePost = Array.from(document.querySelectorAll('main article')).find(
         (el) => el.getBoundingClientRect().bottom > headerHeight,
       );
@@ -175,7 +170,6 @@
         const postUri = firstVisiblePost.id;
         localStorage.setItem(LAST_VIEWED_POST_URI_KEY, postUri);
 
-        // Find in rawPosts to get the timestamp
         const post = rawPosts.find((item) => item.post.uri === postUri);
         if (post?.post?.record?.createdAt) {
           const timestamp = new Date(post.post.record.createdAt).getTime();
@@ -186,7 +180,6 @@
   }
 
   async function restoreScrollPosition() {
-    // 1. Try URI-based approach first
     const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
     if (savedUri) {
       isRestoringScroll = true;
@@ -195,9 +188,8 @@
         let attempts = 0;
         const MAX_FETCH_ATTEMPTS = 10;
 
-        // Fetch loop: Keep getting more posts until we find the URI or hit the limit
         while (!elementToRestore && timelineCursor && attempts < MAX_FETCH_ATTEMPTS) {
-          await tick(); // Wait for DOM render
+          await tick();
           elementToRestore = document.getElementById(savedUri);
           if (!elementToRestore) {
             console.log(`Post ${savedUri} not found, fetching more...`);
@@ -207,7 +199,6 @@
         }
 
         if (elementToRestore) {
-          console.log(`Post ${savedUri} found after ${attempts} fetches. Scrolling into view.`);
           const header = document.querySelector('header');
           const headerHeight = header ? header.offsetHeight : 0;
           elementToRestore.scrollIntoView({ behavior: 'auto', block: 'start' });
@@ -216,15 +207,13 @@
           }
           isRestoringScroll = false;
           return;
-        } else {
-          console.warn(`Could not find post ${savedUri} after ${attempts} fetches. Trying timestamp fallback.`);
         }
       } catch (error) {
         console.error('Error during URI-based scroll restoration:', error);
       }
     }
 
-    // 2. Fallback to timestamp-based approach
+    // Fallback to timestamp-based approach
     const savedTimestamp = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
     if (!savedTimestamp) {
       isRestoringScroll = false;
@@ -241,7 +230,6 @@
       const findClosestPost = () => {
         let closest = null;
         let minDiff = Infinity;
-        // Search rawPosts (flat list) for the closest timestamp
         for (const item of rawPosts) {
           if (item.post?.record?.createdAt) {
             const postTimestamp = new Date(item.post.record.createdAt).getTime();
@@ -262,20 +250,16 @@
 
         if (closestPost) {
           const closestTimestamp = new Date(closestPost.post.record.createdAt).getTime();
-          // Exact match or very close
           if (closestTimestamp === targetTimestamp) {
             break;
           }
-          // If closest post is newer than target, we likely need to fetch deeper into the past
           if (closestTimestamp > targetTimestamp && timelineCursor) {
-            console.log(`Closest post is newer than target, fetching more...`);
             await fetchTimeline();
             attempts++;
           } else {
             break;
           }
         } else if (timelineCursor) {
-          console.log(`No posts found yet, fetching more...`);
           await fetchTimeline();
           attempts++;
         } else {
@@ -284,11 +268,6 @@
       }
 
       if (closestPost) {
-        const postTimestamp = new Date(closestPost.post.record.createdAt).getTime();
-        const diffSeconds = Math.abs(postTimestamp - targetTimestamp) / 1000;
-        console.log(`Found closest post (${diffSeconds.toFixed(0)}s diff) after ${attempts} fetches. Scrolling.`);
-
-        // Wait for render ensuring ID exists in DOM
         await tick();
         const elementToRestore = document.getElementById(closestPost.post.uri);
         if (elementToRestore) {
@@ -300,7 +279,6 @@
           }
         }
       } else {
-        console.warn(`Could not find a suitable post after ${attempts} fetches. Clearing saved position.`);
         localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
         localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
       }
@@ -320,7 +298,6 @@
     saveScrollPosition();
   }
 
-  // --- View Helpers ---
   function showUserProfile(userHandle) {
     profileHandle = userHandle;
     showProfile = true;
@@ -330,12 +307,7 @@
     profileHandle = '';
   }
 
-  function openThread(item) {
-    activeThreadStartPost = item;
-  }
-  function closeThread() {
-    activeThreadStartPost = null;
-  }
+  // openThread/closeThread removed
 
   async function toggleLike(event) {
     if (!session) return;
@@ -366,7 +338,6 @@
           viewer: { ...post.viewer, like: response.uri },
         });
       }
-      // Regenerate display items to reflect the like count update
       displayItems = processFeed(rawPosts);
     } catch (error) {
       console.error('Like/unlike error:', error);
@@ -384,10 +355,6 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
-
-{#if activeThreadStartPost}
-  <ThreadView startPost={activeThreadStartPost} {agent} onClose={closeThread} onLike={toggleLike} onProfile={showUserProfile} />
-{/if}
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
@@ -418,16 +385,13 @@
                 on:profile={(e) => showUserProfile(e.detail.handle)}
               />
 
-              <div
-                class="pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors"
-                on:click={() => openThread(entry.items[0])}
-                role="button"
-                tabindex="0"
-                on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && openThread(entry.items[0])}
+              <a
+                href="/thread/{encodeURIComponent(entry.items[0].post.uri)}"
+                class="block pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors relative"
               >
                 <div class="w-0.5 h-full bg-gray-600 absolute left-10 top-0 bottom-0"></div>
                 <span class="ml-2">Show full thread ({entry.items.length} posts)</span>
-              </div>
+              </a>
 
               <FeedPost item={entry.items[0]} on:like={toggleLike} on:profile={(e) => showUserProfile(e.detail.handle)} />
             </div>
