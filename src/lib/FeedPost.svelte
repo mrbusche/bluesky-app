@@ -30,15 +30,21 @@
       <div class="absolute top-[-16px] h-[16px] w-0.5 bg-gray-600 left-1/2 -translate-x-1/2"></div>
     {/if}
 
-    <img
-      src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
-      alt={item.post.author.displayName}
-      class="w-12 h-12 rounded-full bg-gray-600 cursor-pointer z-10 relative"
+    <button
+      type="button"
+      class="w-12 h-12 rounded-full bg-gray-600 cursor-pointer z-10 relative p-0 border-none"
       onclick={(e) => {
         e.stopPropagation();
         handleProfileClick(item.post.author.handle);
       }}
-    />
+      aria-label={`View profile of ${item.post.author.displayName}`}
+    >
+      <img
+        src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
+        alt={item.post.author.displayName}
+        class="w-full h-full rounded-full"
+      />
+    </button>
 
     {#if connectDown}
       <div class="absolute top-[48px] bottom-[-16px] w-0.5 bg-gray-600 left-1/2 -translate-x-1/2"></div>
