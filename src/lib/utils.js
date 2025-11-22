@@ -150,7 +150,7 @@ export function flattenThread(thread) {
 
   if (thread.replies && thread.replies.length > 0) {
     // Sort by time
-    const sortedReplies = thread.replies.sort((a, b) => new Date(a.post.record.createdAt) - new Date(b.post.record.createdAt));
+    const sortedReplies = thread.replies.slice((a, b) => new Date(a.post.record.createdAt) - new Date(b.post.record.createdAt));
 
     // We add all replies to the flattened list
     for (const reply of sortedReplies) {

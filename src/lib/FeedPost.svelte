@@ -69,6 +69,7 @@
             handleProfileClick(item.post.author.handle);
           }}
           class="font-bold text-white truncate hover:underline cursor-pointer"
+          aria-label={`View profile of ${item.post.author.displayName || item.post.author.handle}`}
         >
           {item.post.author.displayName || item.post.author.handle}
         </button>
@@ -78,6 +79,7 @@
             handleProfileClick(item.post.author.handle);
           }}
           class="text-sm truncate hidden sm:inline hover:underline cursor-pointer"
+          aria-label={`View profile @${item.post.author.handle}`}
         >
           @{item.post.author.handle}
         </button>

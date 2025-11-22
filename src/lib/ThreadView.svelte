@@ -83,7 +83,7 @@
       <div class="p-4 text-red-400 text-center">{error}</div>
     {:else}
       {#each threadPosts as item (item.post.uri)}
-        <FeedPost {item} isThreadView={true} onlike={onLike} onprofile={(e) => onProfile(e.detail.handle)} />
+        <FeedPost {item} isThreadView={true} onlike={onLike} onprofile={(e) => onProfile(e.handle)} />
         {#if item !== threadPosts[threadPosts.length - 1]}
           <div class="w-0.5 h-4 bg-gray-700 mx-auto my-0"></div>
         {/if}
