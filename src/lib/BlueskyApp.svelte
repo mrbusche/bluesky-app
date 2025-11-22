@@ -1,8 +1,9 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import EmbedRenderer from './EmbedRenderer.svelte';
   import UserProfileModal from './UserProfileModal.svelte';
-  import ThreadModal from './ThreadModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import { AtpAgent } from '@atproto/api';
   import { renderTextWithLinks, formatPostDate } from './utils.js';
@@ -21,10 +22,6 @@
   // Profile view state
   let showProfile = false;
   let profileHandle = '';
-
-  // Thread view state
-  let showThread = false;
-  let threadUri = '';
 
   // --- Constants ---
   const BLUESKY_SERVICE = 'https://bsky.social';
@@ -52,6 +49,14 @@
       }
     }
     isLoading = false;
+
+    // Check for profile URL parameter
+    const profileParam = $page.url.searchParams.get('profile');
+    if (profileParam) {
+      showUserProfile(profileParam);
+      // Clear the URL parameter
+      goto('/', { replaceState: true });
+    }
   });
 
   // --- Core Functions ---
@@ -311,13 +316,8 @@
   }
 
   function showThreadModal(uri) {
-    threadUri = uri;
-    showThread = true;
-  }
-
-  function closeThread() {
-    showThread = false;
-    threadUri = '';
+    // Navigate to thread page instead of showing modal
+    goto(`/thread?uri=${encodeURIComponent(uri)}`);
   }
 
   // Group posts into threads, showing only first and last posts for threads with multiple posts
@@ -464,7 +464,6 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
-<ThreadModal open={showThread} {threadUri} {agent} {session} onClose={closeThread} {showUserProfile} />
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if isLoading && !session}
