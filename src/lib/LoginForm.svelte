@@ -1,62 +1,30 @@
 <script>
   import Link from './Link.svelte';
+  import { auth } from './auth.svelte.js';
 
-  // Import the official Bluesky SDK
-  import { AtpAgent } from '@atproto/api';
-  import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
-
-  export let onLoginSuccess = undefined;
+  let { onLoginSuccess } = $props();
 
   // Form input bindings
-  let handle = '';
-  let password = '';
+  let handle = $state('');
+  let password = $state('');
 
   // UI State
-  let isLoading = false;
-  let loginError = '';
-
-  // Constants
-  const LOGIN_TIMEOUT_MS = 15000; // 15 seconds timeout for login
+  let isLoading = $state(false);
+  let loginError = $state('');
 
   async function handleLogin() {
     if (isLoading) return;
     isLoading = true;
     loginError = '';
 
-    try {
-      const agent = new AtpAgent({ service: BLUESKY_SERVICE });
+    const result = await auth.login(handle.trim(), password.trim());
 
-      const loginPromise = agent.login({ identifier: handle.trim(), password: password.trim() });
-      let timeoutId;
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('LOGIN_TIMEOUT')), LOGIN_TIMEOUT_MS);
-      });
-      const response = await Promise.race([loginPromise, timeoutPromise]);
-      clearTimeout(timeoutId);
-
-      if (response.success) {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(agent.session));
-        onLoginSuccess?.({ agent, session: agent.session });
-      } else {
-        loginError = 'Login failed. Please check your handle and app password.';
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      if (error?.message === 'LOGIN_TIMEOUT') {
-        loginError = 'Login is taking longer than expected. Please try again.';
-      } else if (error?.response?.status === 401) {
-        loginError = 'Invalid handle or app password. Please try again.';
-      } else if (error?.response?.status >= 500) {
-        loginError = 'Bluesky is having server issues. Please try again later.';
-      } else if (error?.name === 'TypeError') {
-        // Typical fetch network error in browsers
-        loginError = 'Network error. Please check your internet connection and try again.';
-      } else {
-        loginError = error?.message || 'An unknown error occurred during login.';
-      }
-    } finally {
-      isLoading = false;
+    if (result.success) {
+      onLoginSuccess?.();
+    } else {
+      loginError = result.error;
     }
+    isLoading = false;
   }
 </script>
 
@@ -64,7 +32,12 @@
   <div class="w-full max-w-sm bg-gray-800 rounded-lg shadow-lg p-8">
     <h1 class="text-3xl font-bold text-center mb-2 text-blue-400">Bluesky Client</h1>
     <p class="text-center text-gray-400 mb-6">Log in to view your feed.</p>
-    <form on:submit|preventDefault={handleLogin}>
+    <form
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleLogin();
+      }}
+    >
       <div class="mb-4">
         <label for="handle" class="block text-gray-300 text-sm font-bold mb-2">Bluesky Handle</label>
         <input

@@ -1,18 +1,22 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import Hls from 'hls.js';
 
   // Props
-  export let playlist;
-  export let poster = '';
-  export let controls = true;
-  export let preload = 'metadata';
-  export let playsinline = true;
-  export let muted = false;
-  export let autoplay = false;
+  let {
+    playlist,
+    poster = '',
+    controls = true,
+    preload = 'metadata',
+    playsinline = true,
+    muted = false,
+    autoplay = false,
+    ...rest
+  } = $props();
 
   let videoEl;
   let hls;
+  let observer;
 
   onMount(() => {
     if (!videoEl || !playlist) return;
@@ -29,13 +33,34 @@
       // Fallback
       videoEl.src = playlist;
     }
-  });
 
-  onDestroy(() => {
-    if (hls) {
-      hls.destroy();
-      hls = null;
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+              if (!videoEl.paused) {
+                videoEl.pause();
+              }
+            } else if (autoplay && videoEl.paused) {
+              videoEl.play().catch(() => {});
+            }
+          });
+        },
+        { threshold: 0.5 },
+      );
+      observer.observe(videoEl);
     }
+
+    return () => {
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+      if (observer) {
+        observer.disconnect();
+      }
+    };
   });
 </script>
 
@@ -46,8 +71,7 @@
   {poster}
   {playsinline}
   {muted}
-  {autoplay}
-  {...$$restProps}
+  {...rest}
   class="rounded-lg w-full h-auto border border-gray-600"
 >
   Your browser does not support the video tag.

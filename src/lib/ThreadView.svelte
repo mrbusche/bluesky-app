@@ -4,20 +4,16 @@
   import { fade, fly } from 'svelte/transition';
   import { flattenThread } from '$lib/utils';
 
-  export let startPost; // The post object that started the view
-  export let agent;
-  export let onClose;
-  export let onLike; // Pass like handler back up
-  export let onProfile; // Pass profile handler back up
+  let { startPost, agent, onClose, onLike, onProfile } = $props();
 
-  let threadPosts = [];
-  let loading = true;
-  let error = '';
-  let container;
+  let threadPosts = $state([]);
+  let loading = $state(true);
+  let error = $state('');
+  let container = $state();
 
   // Swipe detection
-  let touchStartX = 0;
-  let touchStartY = 0;
+  let touchStartX = $state(0);
+  let touchStartY = $state(0);
 
   onMount(async () => {
     document.body.style.overflow = 'hidden';
@@ -63,12 +59,12 @@
 <div
   class="fixed inset-0 z-50 bg-gray-900 overflow-y-auto"
   transition:fly={{ x: 300, duration: 200 }}
-  on:touchstart={handleTouchStart}
-  on:touchend={handleTouchEnd}
+  ontouchstart={handleTouchStart}
+  ontouchend={handleTouchEnd}
   bind:this={container}
 >
   <header class="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex items-center space-x-4 z-10">
-    <button on:click={onClose} class="text-blue-400 font-bold flex items-center">
+    <button onclick={onClose} class="text-blue-400 font-bold flex items-center">
       <span class="text-xl mr-1">&larr;</span> Back
     </button>
     <h2 class="text-xl font-bold text-white">Thread</h2>

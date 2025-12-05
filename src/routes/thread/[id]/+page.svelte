@@ -2,51 +2,39 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
-  import { AtpAgent } from '@atproto/api';
   import FeedPost from '$lib/FeedPost.svelte';
   import UserProfileModal from '$lib/UserProfileModal.svelte';
   import { toggleLike as toggleLikeUtil, flattenThread } from '$lib/utils';
-  import { BLUESKY_SERVICE, SESSION_KEY } from '$lib/constants.js';
+  import { auth } from '$lib/auth.svelte.js';
   import '../../../app.css';
 
-  let agent = null;
-  let session = null;
-  let threadPosts = [];
-  let loading = true;
-  let error = '';
+  let threadPosts = $state([]);
+  let loading = $state(true);
+  let error = $state('');
 
-  let showProfile = false;
-  let profileHandle = '';
+  let showProfile = $state(false);
+  let profileHandle = $state('');
 
-  $: uri = decodeURIComponent($page.params.id);
+  let uri = $derived(decodeURIComponent($page.params.id));
 
-  $: if (agent && uri) {
-    fetchThread();
-  }
+  $effect(() => {
+    if (auth.agent && uri) {
+      fetchThread();
+    }
+  });
 
   onMount(async () => {
-    const savedSession = localStorage.getItem(SESSION_KEY);
-    if (!savedSession) {
+    await auth.init();
+    if (!auth.session) {
       goto('/');
       return;
-    }
-
-    try {
-      agent = new AtpAgent({ service: BLUESKY_SERVICE });
-      const sessionData = JSON.parse(savedSession);
-      await agent.resumeSession(sessionData);
-      session = agent.session;
-    } catch (e) {
-      console.error('Session resume failed or thread fetch failed', e);
-      error = 'Could not load thread. Please try logging in again.';
-      loading = false;
     }
   });
 
   async function fetchThread() {
     loading = true;
     try {
-      const { data } = await agent.getPostThread({ uri: uri });
+      const { data } = await auth.agent.getPostThread({ uri: uri });
       if (data.thread) {
         threadPosts = flattenThread(data.thread);
       }
@@ -60,11 +48,11 @@
 
   // Updated toggleLike signature
   async function toggleLike({ item }) {
-    if (!session || !agent) return;
+    if (!auth.session || !auth.agent) return;
     const post = item.post;
 
     try {
-      await toggleLikeUtil(agent, post, (uri, changes) => {
+      await toggleLikeUtil(auth.agent, post, (uri, changes) => {
         threadPosts = threadPosts.map((entry) => {
           if (entry.post.uri === uri) {
             return {
@@ -89,7 +77,13 @@
   }
 </script>
 
-<UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={() => (showProfile = false)} />
+<UserProfileModal
+  open={showProfile}
+  handle={profileHandle}
+  agent={auth.agent}
+  session={auth.session}
+  onClose={() => (showProfile = false)}
+/>
 
 <div class="min-h-screen bg-gray-900 text-gray-200 pb-12">
   <header class="sticky top-0 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 p-4 flex items-center space-x-4 z-10">

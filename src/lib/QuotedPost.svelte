@@ -2,9 +2,7 @@
   import { renderTextWithLinks } from './utils.js';
 
   // Props
-  export let quotedPost = null;
-  export let className = '';
-  export let showUserProfile = null; // Optional callback for handling mention clicks
+  let { quotedPost = null, className = '', showUserProfile = null, children } = $props();
 </script>
 
 {#if quotedPost}
@@ -22,7 +20,7 @@
       class="text-white mt-2 text-sm whitespace-pre-wrap break-words"
       role="button"
       tabindex="0"
-      on:click={(e) => {
+      onclick={(e) => {
         if (showUserProfile) {
           const target = e.target;
           if (target.dataset.mentionDid) {
@@ -32,7 +30,7 @@
           }
         }
       }}
-      on:keydown={(e) => {
+      onkeydown={(e) => {
         if (showUserProfile && (e.key === 'Enter' || e.key === ' ')) {
           const target = e.target;
           if (target.dataset.mentionDid) {
@@ -48,7 +46,7 @@
     </div>
 
     {#if quotedPost.embeds && quotedPost.embeds.length > 0}
-      <slot embeds={quotedPost.embeds} />
+      {@render children?.({ embeds: quotedPost.embeds })}
     {/if}
   </div>
 {/if}

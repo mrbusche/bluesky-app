@@ -6,20 +6,17 @@
   // - external?: boolean (auto-detected from href if not provided)
   // - target?: string (defaults to _blank for external links)
   // - rel?: string (defaults to noopener noreferrer for external links)
-  // - Any other attributes (class, aria-*, title, etc.) are forwarded via $$restProps
+  // - Any other attributes (class, aria-*, title, etc.) are forwarded via rest props
 
-  export let href = '#';
-  export let external = undefined; // boolean | undefined
-  export let target = undefined; // string | undefined
-  export let rel = undefined; // string | undefined
+  let { href = '#', external, target, rel, children, ...rest } = $props();
 
-  $: isExt = external ?? isExternalUrl(href);
-  $: resolvedTarget = target ?? (isExt ? '_blank' : undefined);
-  $: resolvedRel = rel ?? (isExt ? 'noopener noreferrer' : undefined);
+  let isExt = $derived(external ?? isExternalUrl(href));
+  let resolvedTarget = $derived(target ?? (isExt ? '_blank' : undefined));
+  let resolvedRel = $derived(rel ?? (isExt ? 'noopener noreferrer' : undefined));
 </script>
 
-<a {href} target={resolvedTarget} rel={resolvedRel} {...$$restProps}>
-  <slot />
+<a {href} target={resolvedTarget} rel={resolvedRel} {...rest}>
+  {@render children?.()}
   <!--
     Usage examples:
     <Link href={url} class="text-blue-400 hover:underline">Open</Link>
