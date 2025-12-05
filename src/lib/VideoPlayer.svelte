@@ -1,5 +1,5 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import Hls from 'hls.js';
 
   // Props
@@ -16,6 +16,7 @@
 
   let videoEl;
   let hls;
+  let observer;
 
   onMount(() => {
     if (!videoEl || !playlist) return;
@@ -32,13 +33,34 @@
       // Fallback
       videoEl.src = playlist;
     }
-  });
 
-  onDestroy(() => {
-    if (hls) {
-      hls.destroy();
-      hls = null;
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+              if (!videoEl.paused) {
+                videoEl.pause();
+              }
+            } else if (autoplay && videoEl.paused) {
+              videoEl.play().catch(() => {});
+            }
+          });
+        },
+        { threshold: 0.5 },
+      );
+      observer.observe(videoEl);
     }
+
+    return () => {
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+      if (observer) {
+        observer.disconnect();
+      }
+    };
   });
 </script>
 
@@ -49,7 +71,6 @@
   {poster}
   {playsinline}
   {muted}
-  {autoplay}
   {...rest}
   class="rounded-lg w-full h-auto border border-gray-600"
 >
