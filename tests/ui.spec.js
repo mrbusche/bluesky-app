@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.describe('Bluesky App - Navigation and UI', () => {
   test('should have proper page structure', async ({ page }) => {

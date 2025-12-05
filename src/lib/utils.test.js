@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { isExternalUrl, escapeHtml, renderTextWithLinks, formatPostDate } from './utils.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { escapeHtml, formatPostDate, isExternalUrl, renderTextWithLinks } from './utils.js';
 
 describe('isExternalUrl', () => {
   it('should return true for http URLs', () => {
