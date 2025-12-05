@@ -1,8 +1,14 @@
 <script>
   import EmbedRenderer from './EmbedRenderer.svelte';
+  import FeedPost from './FeedPost.svelte';
   import { renderTextWithLinks, formatPostDate } from './utils.js';
 
   let { item, isThreadView = false, connectUp = false, connectDown = false, onlike, onprofile } = $props();
+
+  let isSelfThread = $derived(!isThreadView && item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did);
+  let rootPost = $derived(item.reply?.root);
+  let showRoot = $derived(isSelfThread && rootPost?.$type === 'app.bsky.feed.defs#postView' && !connectUp);
+  let effectiveConnectUp = $derived(connectUp || showRoot);
 
   function handleLike() {
     onlike?.({ item });
@@ -24,9 +30,13 @@
   }
 </script>
 
+{#if showRoot}
+  <FeedPost item={{ post: rootPost }} isThreadView={true} connectDown={true} {onlike} {onprofile} />
+{/if}
+
 <article class="p-4 border-b border-gray-700 flex space-x-4 {isThreadView ? 'bg-gray-900' : ''} relative" id={item.post.uri}>
   <div class="flex-shrink-0 flex flex-col items-center relative self-stretch" style="width: 48px;">
-    {#if connectUp}
+    {#if effectiveConnectUp}
       <div class="absolute top-[-16px] h-[16px] w-0.5 bg-gray-600 left-1/2 -translate-x-1/2"></div>
     {/if}
 
@@ -60,7 +70,7 @@
       </div>
     {/if}
 
-    {#if !isThreadView && item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did}
+    {#if isSelfThread && !showRoot}
       <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
         <span>🧵</span>
         <span>Thread</span>
