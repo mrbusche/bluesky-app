@@ -1,9 +1,6 @@
 <script>
   import Link from './Link.svelte';
-
-  // Import the official Bluesky SDK
-  import { AtpAgent } from '@atproto/api';
-  import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
+  import { auth } from './auth.svelte.js';
 
   let { onLoginSuccess } = $props();
 
@@ -15,48 +12,19 @@
   let isLoading = $state(false);
   let loginError = $state('');
 
-  // Constants
-  const LOGIN_TIMEOUT_MS = 15000; // 15 seconds timeout for login
-
   async function handleLogin() {
     if (isLoading) return;
     isLoading = true;
     loginError = '';
 
-    try {
-      const agent = new AtpAgent({ service: BLUESKY_SERVICE });
+    const result = await auth.login(handle.trim(), password.trim());
 
-      const loginPromise = agent.login({ identifier: handle.trim(), password: password.trim() });
-      let timeoutId;
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('LOGIN_TIMEOUT')), LOGIN_TIMEOUT_MS);
-      });
-      const response = await Promise.race([loginPromise, timeoutPromise]);
-      clearTimeout(timeoutId);
-
-      if (response.success) {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(agent.session));
-        onLoginSuccess?.({ agent, session: agent.session });
-      } else {
-        loginError = 'Login failed. Please check your handle and app password.';
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      if (error?.message === 'LOGIN_TIMEOUT') {
-        loginError = 'Login is taking longer than expected. Please try again.';
-      } else if (error?.response?.status === 401) {
-        loginError = 'Invalid handle or app password. Please try again.';
-      } else if (error?.response?.status >= 500) {
-        loginError = 'Bluesky is having server issues. Please try again later.';
-      } else if (error?.name === 'TypeError') {
-        // Typical fetch network error in browsers
-        loginError = 'Network error. Please check your internet connection and try again.';
-      } else {
-        loginError = error?.message || 'An unknown error occurred during login.';
-      }
-    } finally {
-      isLoading = false;
+    if (result.success) {
+      onLoginSuccess?.();
+    } else {
+      loginError = result.error;
     }
+    isLoading = false;
   }
 </script>
 

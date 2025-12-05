@@ -169,3 +169,38 @@ export function flattenThread(thread) {
 
   return posts;
 }
+
+export function processFeed(posts) {
+  const items = [];
+  let i = 0;
+
+  while (i < posts.length) {
+    const current = posts[i];
+    const thread = [current];
+    let j = i + 1;
+
+    while (j < posts.length) {
+      const next = posts[j];
+      const prevInGroup = thread[thread.length - 1];
+
+      const sameAuthor = prevInGroup.post.author.did === next.post.author.did;
+      const isReplyToNext = prevInGroup.reply?.parent?.uri === next.post.uri;
+
+      if (sameAuthor && isReplyToNext) {
+        thread.push(next);
+        j++;
+      } else {
+        break;
+      }
+    }
+
+    if (thread.length > 1) {
+      items.push({ type: 'threadGroup', items: thread });
+      i = j;
+    } else {
+      items.push({ type: 'post', item: current });
+      i++;
+    }
+  }
+  return items;
+}

@@ -3,13 +3,11 @@
   import UserProfileModal from './UserProfileModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import FeedPost from './FeedPost.svelte';
-  import { AtpAgent } from '@atproto/api';
-  import { toggleLike as toggleLikeUtil } from './utils.js';
-  import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
+  import { toggleLike as toggleLikeUtil, processFeed } from './utils.js';
+  import { auth } from './auth.svelte.js';
 
   // --- Svelte State Management ---
-  let agent = $state(null);
-  let session = $state(null);
+  // agent and session are now managed in auth.svelte.js
 
   let rawPosts = $state([]);
   let displayItems = $state([]);
@@ -17,7 +15,6 @@
   let timelineCursor = $state(null);
 
   // UI State
-  let isLoading = $state(true);
   let isFetchingMore = $state(false);
   let isRestoringScroll = $state(false);
 
@@ -31,66 +28,16 @@
 
   // --- Lifecycle & Initialization ---
   onMount(async () => {
-    const savedSession = localStorage.getItem(SESSION_KEY);
-
-    if (savedSession) {
-      agent = new AtpAgent({ service: BLUESKY_SERVICE });
-      try {
-        const sessionData = JSON.parse(savedSession);
-        await agent.resumeSession(sessionData);
-        session = agent.session;
-        console.log('Session resumed successfully.');
-        await fetchTimeline();
-        await restoreScrollPosition();
-      } catch (error) {
-        console.error('Failed to resume session:', error);
-        localStorage.removeItem(SESSION_KEY);
-        session = null;
-      }
+    await auth.init();
+    if (auth.session) {
+      await fetchTimeline();
+      await restoreScrollPosition();
     }
-    isLoading = false;
   });
 
-  // --- Feed Processing (Thread Grouping) ---
-  function processFeed(posts) {
-    const items = [];
-    let i = 0;
-
-    while (i < posts.length) {
-      const current = posts[i];
-      const thread = [current];
-      let j = i + 1;
-
-      while (j < posts.length) {
-        const next = posts[j];
-        const prevInGroup = thread[thread.length - 1];
-
-        const sameAuthor = prevInGroup.post.author.did === next.post.author.did;
-        const isReplyToNext = prevInGroup.reply?.parent?.uri === next.post.uri;
-
-        if (sameAuthor && isReplyToNext) {
-          thread.push(next);
-          j++;
-        } else {
-          break;
-        }
-      }
-
-      if (thread.length > 1) {
-        items.push({ type: 'threadGroup', items: thread });
-        i = j;
-      } else {
-        items.push({ type: 'post', item: current });
-        i++;
-      }
-    }
-    return items;
-  }
-
   // --- Core Functions ---
-  async function handleLoginSuccess({ agent: newAgent, session: newSession }) {
-    agent = newAgent;
-    session = newSession;
+  async function handleLoginSuccess() {
+    // auth state is already updated by LoginForm calling auth.login
     try {
       await fetchTimeline();
       await restoreScrollPosition();
@@ -100,18 +47,11 @@
   }
 
   function handleLogout() {
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
-    localStorage.removeItem(LAST_VIEWED_POST_URI_KEY);
-    session = null;
-    rawPosts = [];
-    displayItems = [];
-    timelineCursor = null;
-    window.location.reload();
+    auth.logout();
   }
 
   async function fetchTimeline() {
-    if (isFetchingMore || !session) return;
+    if (isFetchingMore || !auth.session) return;
     isFetchingMore = true;
 
     try {
@@ -120,7 +60,7 @@
         params.cursor = timelineCursor;
       }
 
-      const response = await agent.getTimeline(params);
+      const response = await auth.agent.getTimeline(params);
       if (response.data.feed.length > 0) {
         const newPosts = response.data.feed.filter((item) => {
           if (!item.post) return false;
@@ -142,9 +82,7 @@
       const status = error?.response?.status || error?.status;
       console.error('Failed to fetch timeline:', { error, status, timelineCursor });
       if (status === 401) {
-        localStorage.removeItem(SESSION_KEY);
-        session = null;
-        window.location.reload();
+        auth.logout();
       }
     } finally {
       isFetchingMore = false;
@@ -304,7 +242,7 @@
   }
 
   async function toggleLike({ item }) {
-    if (!session) return;
+    if (!auth.session) return;
     const post = item.post;
 
     const updatePostInList = (list, targetUri, changes) => {
@@ -344,7 +282,7 @@
     };
 
     try {
-      await toggleLikeUtil(agent, post, (uri, changes) => {
+      await toggleLikeUtil(auth.agent, post, (uri, changes) => {
         rawPosts = updatePostInList(rawPosts, uri, changes);
         displayItems = updatePostInDisplayItems(displayItems, uri, changes);
       });
@@ -363,18 +301,18 @@
   </div>
 {/if}
 
-<UserProfileModal open={showProfile} handle={profileHandle} {agent} {session} onClose={closeProfile} />
+<UserProfileModal open={showProfile} handle={profileHandle} agent={auth.agent} session={auth.session} onClose={closeProfile} />
 
 <div class="max-w-2xl mx-auto font-sans">
-  {#if isLoading && !session}
+  {#if auth.isLoading && !auth.session}
     <div class="min-h-screen flex items-center justify-center">
       <div class="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
     </div>
-  {:else if session}
+  {:else if auth.session}
     <div>
       <header class="sticky top-0 bg-gray-900 bg-opacity-80 backdrop-blur-md z-20 border-b border-gray-700">
         <div class="flex justify-between items-center p-4">
-          <h1 class="text-xl font-bold text-blue-400">{session.handle ? `${session.handle}'s feed` : 'Your Feed'}</h1>
+          <h1 class="text-xl font-bold text-blue-400">{auth.session.handle ? `${auth.session.handle}'s feed` : 'Your Feed'}</h1>
           <button
             onclick={handleLogout}
             class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-150 ease-in-out"
