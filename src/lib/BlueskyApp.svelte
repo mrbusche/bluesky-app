@@ -333,13 +333,15 @@
                 onprofile={(e) => showUserProfile(e.handle)}
               />
 
-              <a
-                href="/thread/{encodeURIComponent(entry.items[0].post.uri)}"
-                class="block pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors relative"
-              >
-                <div class="w-0.5 h-full bg-gray-600 absolute left-[39px] top-0 bottom-0"></div>
-                <span class="ml-2">Show full thread ({entry.items.length} posts)</span>
-              </a>
+              {#if entry.items.length > 2}
+                <a
+                  href="/thread/{encodeURIComponent(entry.items[0].post.uri)}"
+                  class="block pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors relative"
+                >
+                  <div class="w-0.5 h-full bg-gray-600 absolute left-[39px] top-0 bottom-0"></div>
+                  <span class="ml-2">Show full thread ({entry.items.length} posts)</span>
+                </a>
+              {/if}
 
               <FeedPost item={entry.items[0]} connectUp={true} onlike={toggleLike} onprofile={(e) => showUserProfile(e.handle)} />
             </div>
