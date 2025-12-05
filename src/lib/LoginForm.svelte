@@ -5,15 +5,15 @@
   import { AtpAgent } from '@atproto/api';
   import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
 
-  export let onLoginSuccess = undefined;
+  let { onLoginSuccess } = $props();
 
   // Form input bindings
-  let handle = '';
-  let password = '';
+  let handle = $state('');
+  let password = $state('');
 
   // UI State
-  let isLoading = false;
-  let loginError = '';
+  let isLoading = $state(false);
+  let loginError = $state('');
 
   // Constants
   const LOGIN_TIMEOUT_MS = 15000; // 15 seconds timeout for login
@@ -64,7 +64,12 @@
   <div class="w-full max-w-sm bg-gray-800 rounded-lg shadow-lg p-8">
     <h1 class="text-3xl font-bold text-center mb-2 text-blue-400">Bluesky Client</h1>
     <p class="text-center text-gray-400 mb-6">Log in to view your feed.</p>
-    <form on:submit|preventDefault={handleLogin}>
+    <form
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleLogin();
+      }}
+    >
       <div class="mb-4">
         <label for="handle" class="block text-gray-300 text-sm font-bold mb-2">Bluesky Handle</label>
         <input

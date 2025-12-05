@@ -8,22 +8,22 @@
   import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
 
   // --- Svelte State Management ---
-  let agent = null;
-  let session = null;
+  let agent = $state(null);
+  let session = $state(null);
 
-  let rawPosts = [];
-  let displayItems = [];
+  let rawPosts = $state([]);
+  let displayItems = $state([]);
 
-  let timelineCursor = null;
+  let timelineCursor = $state(null);
 
   // UI State
-  let isLoading = true;
-  let isFetchingMore = false;
-  let isRestoringScroll = false;
+  let isLoading = $state(true);
+  let isFetchingMore = $state(false);
+  let isRestoringScroll = $state(false);
 
   // Profile view state
-  let showProfile = false;
-  let profileHandle = '';
+  let showProfile = $state(false);
+  let profileHandle = $state('');
 
   // --- Constants ---
   const LAST_VIEWED_POST_TIMESTAMP_KEY = 'blueskyLastViewedPostTimestamp';
@@ -354,7 +354,7 @@
   }
 </script>
 
-<svelte:window on:scroll={handleInfiniteScroll} />
+<svelte:window onscroll={handleInfiniteScroll} />
 
 {#if isRestoringScroll}
   <div class="fixed bottom-4 right-4 bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg z-20 flex items-center space-x-2">
@@ -376,7 +376,7 @@
         <div class="flex justify-between items-center p-4">
           <h1 class="text-xl font-bold text-blue-400">{session.handle ? `${session.handle}'s feed` : 'Your Feed'}</h1>
           <button
-            on:click={handleLogout}
+            onclick={handleLogout}
             class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-150 ease-in-out"
           >
             Logout

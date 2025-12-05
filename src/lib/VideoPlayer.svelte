@@ -3,13 +3,16 @@
   import Hls from 'hls.js';
 
   // Props
-  export let playlist;
-  export let poster = '';
-  export let controls = true;
-  export let preload = 'metadata';
-  export let playsinline = true;
-  export let muted = false;
-  export let autoplay = false;
+  let {
+    playlist,
+    poster = '',
+    controls = true,
+    preload = 'metadata',
+    playsinline = true,
+    muted = false,
+    autoplay = false,
+    ...rest
+  } = $props();
 
   let videoEl;
   let hls;
@@ -47,7 +50,7 @@
   {playsinline}
   {muted}
   {autoplay}
-  {...$$restProps}
+  {...rest}
   class="rounded-lg w-full h-auto border border-gray-600"
 >
   Your browser does not support the video tag.

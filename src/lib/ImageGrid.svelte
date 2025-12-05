@@ -2,9 +2,7 @@
   import ImageLink from './ImageLink.svelte';
 
   // images: Array<{ thumb?: string, fullsize?: string, alt?: string }>
-  export let images = [];
-  export let className = '';
-  export let link = true; // when false, render plain <img>
+  let { images = [], className = '', link = true } = $props();
 </script>
 
 {#if images && images.length > 0}

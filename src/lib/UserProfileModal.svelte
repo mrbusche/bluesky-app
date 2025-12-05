@@ -2,18 +2,13 @@
   import Modal from './Modal.svelte';
 
   // Props
-  export let open = false; // controls visibility
-  export let handle = ''; // user handle to load
-  export let agent = null; // AtpAgent instance
-  export let session = null; // session object (optional, for follow/unfollow)
-
-  export let onClose = undefined;
+  let { open = $bindable(false), handle = '', agent = null, session = null, onClose } = $props();
 
   // Local state
-  let isLoading = false;
-  let error = '';
-  let profile = null;
-  let isFollowing = false;
+  let isLoading = $state(false);
+  let error = $state('');
+  let profile = $state(null);
+  let isFollowing = $state(false);
 
   async function loadProfile() {
     if (!open || !handle || !agent) return;
@@ -32,9 +27,11 @@
   }
 
   // Refetch whenever opened or handle changes
-  $: if (open && handle) {
-    loadProfile();
-  }
+  $effect(() => {
+    if (open && handle) {
+      loadProfile();
+    }
+  });
 
   function close() {
     onClose?.();
@@ -77,7 +74,7 @@
 <Modal bind:open {close} ariaLabel="Profile dialog">
   <div class="flex justify-between items-start mb-4">
     <h2 id="profile-dialog-title" class="text-xl font-bold text-blue-400">Profile</h2>
-    <button on:click={close} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
+    <button onclick={close} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
   </div>
 
   {#if isLoading}
@@ -111,7 +108,7 @@
       {#if session}
         {#if !profile.viewer?.following}
           <button
-            on:click={follow}
+            onclick={follow}
             disabled={isFollowing}
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-blue-800 disabled:cursor-not-allowed"
           >
@@ -123,7 +120,7 @@
           </button>
         {:else}
           <button
-            on:click={unfollow}
+            onclick={unfollow}
             disabled={isFollowing}
             class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-green-800 disabled:cursor-not-allowed"
           >

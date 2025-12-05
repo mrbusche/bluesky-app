@@ -9,20 +9,22 @@
   import { BLUESKY_SERVICE, SESSION_KEY } from '$lib/constants.js';
   import '../../../app.css';
 
-  let agent = null;
-  let session = null;
-  let threadPosts = [];
-  let loading = true;
-  let error = '';
+  let agent = $state(null);
+  let session = $state(null);
+  let threadPosts = $state([]);
+  let loading = $state(true);
+  let error = $state('');
 
-  let showProfile = false;
-  let profileHandle = '';
+  let showProfile = $state(false);
+  let profileHandle = $state('');
 
-  $: uri = decodeURIComponent($page.params.id);
+  let uri = $derived(decodeURIComponent($page.params.id));
 
-  $: if (agent && uri) {
-    fetchThread();
-  }
+  $effect(() => {
+    if (agent && uri) {
+      fetchThread();
+    }
+  });
 
   onMount(async () => {
     const savedSession = localStorage.getItem(SESSION_KEY);
