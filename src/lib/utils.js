@@ -154,6 +154,9 @@ export function flattenThread(thread) {
 
     // We add all replies to the flattened list
     for (const reply of sortedReplies) {
+      // Filter out replies not by the original author
+      if (reply.post.author.did !== thread.post.author.did) continue;
+
       // We only recurse if it's part of the same conversation "thread" visually
       // For simplicity in this view, let's flatten one level deep or
       // checking if it's the same author to keep the "Thread" feel
