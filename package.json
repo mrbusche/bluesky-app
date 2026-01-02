@@ -40,7 +40,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@atproto/api": "0.18.8",
+    "@atproto/api": "0.18.9",
     "hls.js": "1.6.15"
   }
 }
