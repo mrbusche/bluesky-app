@@ -207,3 +207,46 @@ export function processFeed(posts) {
   }
   return items;
 }
+
+// Share a post using the Web Share API (with fallback to clipboard)
+export async function sharePost(post) {
+  if (!post) return false;
+
+  // Extract post URI parts to build the URL
+  // URI format: at://did:plc:xxxxx/app.bsky.feed.post/xxxxx
+  const uriParts = post.uri.split('/');
+  const postId = uriParts[uriParts.length - 1];
+  const authorHandle = post.author.handle;
+
+  const postUrl = `https://bsky.app/profile/${authorHandle}/post/${postId}`;
+  const postText = post.record?.text || '';
+  const shareData = {
+    title: `Post by ${post.author.displayName || post.author.handle}`,
+    text: postText ? `${postText}\n\n` : '',
+    url: postUrl,
+  };
+
+  // Check if Web Share API is supported
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      return true;
+    } catch (error) {
+      // User cancelled or error occurred
+      if (error.name !== 'AbortError') {
+        console.error('Share failed:', error);
+      }
+      return false;
+    }
+  } else {
+    // Fallback to clipboard
+    try {
+      const textToShare = `${shareData.text}${shareData.url}`;
+      await navigator.clipboard.writeText(textToShare);
+      return true;
+    } catch (error) {
+      console.error('Clipboard copy failed:', error);
+      return false;
+    }
+  }
+}
