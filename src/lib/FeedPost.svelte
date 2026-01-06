@@ -1,7 +1,7 @@
 <script>
   import EmbedRenderer from './EmbedRenderer.svelte';
   import FeedPost from './FeedPost.svelte';
-  import { renderTextWithLinks, formatPostDate } from './utils.js';
+  import { renderTextWithLinks, formatPostDate, sharePost } from './utils.js';
 
   let { item, isThreadView = false, connectUp = false, connectDown = false, onlike, onprofile } = $props();
 
@@ -9,6 +9,7 @@
   let rootPost = $derived(item.reply?.root);
   let showRoot = $derived(isSelfThread && rootPost?.$type === 'app.bsky.feed.defs#postView' && !connectUp);
   let effectiveConnectUp = $derived(connectUp || showRoot);
+  let shareStatus = $state('');
 
   function handleLike() {
     onlike?.({ item });
@@ -26,6 +27,17 @@
       handleProfileClick(handle);
       e.preventDefault();
       e.stopPropagation();
+    }
+  }
+
+  async function handleShare() {
+    const success = await sharePost(item.post);
+    if (success && !navigator.share) {
+      // If we used clipboard fallback, show feedback
+      shareStatus = 'copied';
+      setTimeout(() => {
+        shareStatus = '';
+      }, 2000);
     }
   }
 </script>
@@ -103,19 +115,35 @@
         <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
       </div>
 
-      <button
-        onclick={(e) => {
-          e.stopPropagation();
-          handleLike();
-        }}
-        class="flex items-center space-x-1 hover:text-red-400 transition-colors flex-shrink-0 ml-2"
-        aria-label={item.post.viewer?.like ? 'Unlike post' : 'Like post'}
-      >
-        <span class="text-lg">{item.post.viewer?.like ? '❤️' : '🤍'}</span>
-        {#if item.post.likeCount > 0}
-          <span class="text-sm">{item.post.likeCount}</span>
-        {/if}
-      </button>
+      <div class="flex items-center space-x-2 flex-shrink-0 ml-2">
+        <button
+          onclick={(e) => {
+            e.stopPropagation();
+            handleShare();
+          }}
+          class="flex items-center space-x-1 hover:text-blue-400 transition-colors relative"
+          aria-label="Share post"
+          title={shareStatus === 'copied' ? 'Copied to clipboard!' : 'Share post'}
+        >
+          <span class="text-lg">🔗</span>
+          {#if shareStatus === 'copied'}
+            <span class="text-xs absolute -bottom-5 left-0 text-blue-400 whitespace-nowrap">Copied!</span>
+          {/if}
+        </button>
+        <button
+          onclick={(e) => {
+            e.stopPropagation();
+            handleLike();
+          }}
+          class="flex items-center space-x-1 hover:text-red-400 transition-colors"
+          aria-label={item.post.viewer?.like ? 'Unlike post' : 'Like post'}
+        >
+          <span class="text-lg">{item.post.viewer?.like ? '❤️' : '🤍'}</span>
+          {#if item.post.likeCount > 0}
+            <span class="text-sm">{item.post.likeCount}</span>
+          {/if}
+        </button>
+      </div>
     </div>
 
     <div

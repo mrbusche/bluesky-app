@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { escapeHtml, formatPostDate, isExternalUrl, renderTextWithLinks } from './utils.js';
+import { escapeHtml, formatPostDate, isExternalUrl, renderTextWithLinks, sharePost } from './utils.js';
 
 describe('isExternalUrl', () => {
   it('should return true for http URLs', () => {
@@ -193,5 +193,122 @@ describe('formatPostDate', () => {
   it('should handle posts from exactly 24 hours ago', () => {
     const date = new Date('2024-01-14T12:00:00Z').toISOString();
     expect(formatPostDate(date)).toBe('1d');
+  });
+});
+
+describe('sharePost', () => {
+  const mockPost = {
+    uri: 'at://did:plc:abc123/app.bsky.feed.post/xyz789',
+    author: {
+      handle: 'testuser.bsky.social',
+      displayName: 'Test User',
+    },
+    record: {
+      text: 'This is a test post',
+    },
+  };
+
+  beforeEach(() => {
+    // Reset all mocks
+    vi.clearAllMocks();
+
+    // Clean up navigator mocks
+    delete global.navigator;
+    global.navigator = {};
+  });
+
+  it('should use Web Share API when available', async () => {
+    const shareMock = vi.fn().mockResolvedValue(undefined);
+    global.navigator.share = shareMock;
+
+    const result = await sharePost(mockPost);
+
+    expect(result).toBe(true);
+    expect(shareMock).toHaveBeenCalledWith({
+      title: 'Post by Test User',
+      text: 'This is a test post\n\n',
+      url: 'https://bsky.app/profile/testuser.bsky.social/post/xyz789',
+    });
+  });
+
+  it('should return false when user cancels Web Share', async () => {
+    const error = new Error('User cancelled');
+    error.name = 'AbortError';
+    const shareMock = vi.fn().mockRejectedValue(error);
+    global.navigator.share = shareMock;
+
+    const result = await sharePost(mockPost);
+
+    expect(result).toBe(false);
+    expect(shareMock).toHaveBeenCalled();
+  });
+
+  it('should fallback to clipboard when Web Share API is not available', async () => {
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    global.navigator.clipboard = {
+      writeText: writeTextMock,
+    };
+
+    const result = await sharePost(mockPost);
+
+    expect(result).toBe(true);
+    expect(writeTextMock).toHaveBeenCalledWith('This is a test post\n\nhttps://bsky.app/profile/testuser.bsky.social/post/xyz789');
+  });
+
+  it('should handle post without text', async () => {
+    const postWithoutText = {
+      ...mockPost,
+      record: {},
+    };
+    const shareMock = vi.fn().mockResolvedValue(undefined);
+    global.navigator.share = shareMock;
+
+    const result = await sharePost(postWithoutText);
+
+    expect(result).toBe(true);
+    expect(shareMock).toHaveBeenCalledWith({
+      title: 'Post by Test User',
+      text: '',
+      url: 'https://bsky.app/profile/testuser.bsky.social/post/xyz789',
+    });
+  });
+
+  it('should use handle when displayName is not available', async () => {
+    const postWithoutDisplayName = {
+      ...mockPost,
+      author: {
+        handle: 'testuser.bsky.social',
+      },
+    };
+    const shareMock = vi.fn().mockResolvedValue(undefined);
+    global.navigator.share = shareMock;
+
+    await sharePost(postWithoutDisplayName);
+
+    expect(shareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Post by testuser.bsky.social',
+      }),
+    );
+  });
+
+  it('should return false when post is null', async () => {
+    const result = await sharePost(null);
+    expect(result).toBe(false);
+  });
+
+  it('should handle clipboard errors gracefully', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const writeTextMock = vi.fn().mockRejectedValue(new Error('Clipboard not available'));
+    global.navigator.clipboard = {
+      writeText: writeTextMock,
+    };
+
+    const result = await sharePost(mockPost);
+
+    expect(result).toBe(false);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Clipboard copy failed:', expect.any(Error));
+
+    consoleErrorSpy.mockRestore();
   });
 });
