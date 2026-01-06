@@ -31,9 +31,9 @@
   }
 
   async function handleShare() {
-    const success = await sharePost(item.post);
-    if (success && !navigator.share) {
-      // If we used clipboard fallback, show feedback
+    const result = await sharePost(item.post);
+    if (result.success && result.method === 'clipboard') {
+      // If we used clipboard, show feedback
       shareStatus = 'copied';
       setTimeout(() => {
         shareStatus = '';
