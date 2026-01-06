@@ -313,14 +313,28 @@ describe('sharePost', () => {
   });
 
   it('should validate URI format and return false for malformed URIs', async () => {
-    const invalidPost = {
+    const invalidPost1 = {
       ...mockPost,
       uri: 'invalid-uri',
     };
+    const result1 = await sharePost(invalidPost1);
+    expect(result1).toEqual({ success: false, method: null });
 
-    const result = await sharePost(invalidPost);
+    // Test URI without proper DID
+    const invalidPost2 = {
+      ...mockPost,
+      uri: 'at://not-a-did/app.bsky.feed.post/xyz789',
+    };
+    const result2 = await sharePost(invalidPost2);
+    expect(result2).toEqual({ success: false, method: null });
 
-    expect(result).toEqual({ success: false, method: null });
+    // Test URI with too few parts
+    const invalidPost3 = {
+      ...mockPost,
+      uri: 'at://did:plc:abc123',
+    };
+    const result3 = await sharePost(invalidPost3);
+    expect(result3).toEqual({ success: false, method: null });
   });
 
   it('should fallback to clipboard when Web Share fails with non-AbortError', async () => {

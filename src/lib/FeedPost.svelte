@@ -127,7 +127,9 @@
         >
           <span class="text-lg">🔗</span>
           {#if shareStatus === 'copied'}
-            <span class="text-xs absolute -bottom-5 left-0 text-blue-400 whitespace-nowrap">Copied!</span>
+            <span class="text-xs absolute -bottom-5 left-0 text-blue-400 whitespace-nowrap" role="status" aria-live="polite"
+              >Copied!</span
+            >
           {/if}
         </button>
         <button
