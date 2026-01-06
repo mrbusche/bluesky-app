@@ -125,7 +125,7 @@
           aria-label="Share post"
           title={shareStatus === 'copied' ? 'Copied to clipboard!' : 'Share post'}
         >
-          <span class="text-lg">🔗</span>
+          <span class="text-lg">↗️</span>
           {#if shareStatus === 'copied'}
             <span class="text-xs absolute -bottom-5 left-0 text-blue-400 whitespace-nowrap" role="status" aria-live="polite"
               >Copied!</span
