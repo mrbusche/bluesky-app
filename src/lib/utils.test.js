@@ -223,7 +223,7 @@ describe('sharePost', () => {
 
     const result = await sharePost(mockPost);
 
-    expect(result).toBe(true);
+    expect(result).toEqual({ success: true, method: 'share' });
     expect(shareMock).toHaveBeenCalledWith({
       title: 'Post by Test User',
       text: 'This is a test post\n\n',
@@ -239,7 +239,7 @@ describe('sharePost', () => {
 
     const result = await sharePost(mockPost);
 
-    expect(result).toBe(false);
+    expect(result).toEqual({ success: false, method: null });
     expect(shareMock).toHaveBeenCalled();
   });
 
@@ -251,7 +251,7 @@ describe('sharePost', () => {
 
     const result = await sharePost(mockPost);
 
-    expect(result).toBe(true);
+    expect(result).toEqual({ success: true, method: 'clipboard' });
     expect(writeTextMock).toHaveBeenCalledWith('This is a test post\n\nhttps://bsky.app/profile/testuser.bsky.social/post/xyz789');
   });
 
@@ -265,7 +265,7 @@ describe('sharePost', () => {
 
     const result = await sharePost(postWithoutText);
 
-    expect(result).toBe(true);
+    expect(result).toEqual({ success: true, method: 'share' });
     expect(shareMock).toHaveBeenCalledWith({
       title: 'Post by Test User',
       text: '',
@@ -294,7 +294,7 @@ describe('sharePost', () => {
 
   it('should return false when post is null', async () => {
     const result = await sharePost(null);
-    expect(result).toBe(false);
+    expect(result).toEqual({ success: false, method: null });
   });
 
   it('should handle clipboard errors gracefully', async () => {
@@ -306,9 +306,45 @@ describe('sharePost', () => {
 
     const result = await sharePost(mockPost);
 
-    expect(result).toBe(false);
+    expect(result).toEqual({ success: false, method: null });
     expect(consoleErrorSpy).toHaveBeenCalledWith('Clipboard copy failed:', expect.any(Error));
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it('should validate URI format and return false for malformed URIs', async () => {
+    const invalidPost = {
+      ...mockPost,
+      uri: 'invalid-uri',
+    };
+
+    const result = await sharePost(invalidPost);
+
+    expect(result).toEqual({ success: false, method: null });
+  });
+
+  it('should fallback to clipboard when Web Share fails with non-AbortError', async () => {
+    const shareMock = vi.fn().mockRejectedValue(new Error('Share failed'));
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    global.navigator.share = shareMock;
+    global.navigator.clipboard = {
+      writeText: writeTextMock,
+    };
+
+    const result = await sharePost(mockPost);
+
+    expect(result).toEqual({ success: true, method: 'clipboard' });
+    expect(shareMock).toHaveBeenCalled();
+    expect(writeTextMock).toHaveBeenCalled();
+  });
+
+  it('should validate post has required fields', async () => {
+    const postWithoutAuthor = {
+      uri: 'at://did:plc:abc123/app.bsky.feed.post/xyz789',
+    };
+
+    const result = await sharePost(postWithoutAuthor);
+
+    expect(result).toEqual({ success: false, method: null });
   });
 });

@@ -210,11 +210,13 @@ export function processFeed(posts) {
 
 // Share a post using the Web Share API (with fallback to clipboard)
 export async function sharePost(post) {
-  if (!post) return false;
+  if (!post || !post.uri || !post.author || !post.author.handle) return { success: false, method: null };
 
   // Extract post URI parts to build the URL
   // URI format: at://did:plc:xxxxx/app.bsky.feed.post/xxxxx
   const uriParts = post.uri.split('/');
+  if (uriParts.length < 2) return { success: false, method: null };
+
   const postId = uriParts[uriParts.length - 1];
   const authorHandle = post.author.handle;
 
@@ -230,23 +232,32 @@ export async function sharePost(post) {
   if (navigator.share) {
     try {
       await navigator.share(shareData);
-      return true;
+      return { success: true, method: 'share' };
     } catch (error) {
       // User cancelled or error occurred
       if (error.name !== 'AbortError') {
         console.error('Share failed:', error);
+        // Try clipboard fallback on error
+        try {
+          const textToShare = `${shareData.text}${shareData.url}`;
+          await navigator.clipboard.writeText(textToShare);
+          return { success: true, method: 'clipboard' };
+        } catch (clipboardError) {
+          console.error('Clipboard copy failed:', clipboardError);
+          return { success: false, method: null };
+        }
       }
-      return false;
+      return { success: false, method: null };
     }
   } else {
     // Fallback to clipboard
     try {
       const textToShare = `${shareData.text}${shareData.url}`;
       await navigator.clipboard.writeText(textToShare);
-      return true;
+      return { success: true, method: 'clipboard' };
     } catch (error) {
       console.error('Clipboard copy failed:', error);
-      return false;
+      return { success: false, method: null };
     }
   }
 }
