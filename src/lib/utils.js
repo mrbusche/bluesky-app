@@ -212,10 +212,12 @@ export function processFeed(posts) {
 export async function sharePost(post) {
   if (!post || !post.uri || !post.author || !post.author.handle) return { success: false, method: null };
 
-  // Extract post URI parts to build the URL
-  // URI format: at://did:plc:xxxxx/app.bsky.feed.post/xxxxx
+  // Validate AT Protocol URI format: at://did:plc:xxxxx/app.bsky.feed.post/xxxxx
+  // Should have format: at://<did>/<collection>/<rkey>
   const uriParts = post.uri.split('/');
-  if (uriParts.length < 2) return { success: false, method: null };
+  if (uriParts.length < 5 || !uriParts[0].startsWith('at:') || !uriParts[2].startsWith('did:')) {
+    return { success: false, method: null };
+  }
 
   const postId = uriParts[uriParts.length - 1];
   const authorHandle = post.author.handle;
