@@ -3,6 +3,7 @@
   import UserProfileModal from './UserProfileModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import FeedPost from './FeedPost.svelte';
+  import ThreadView from './ThreadView.svelte';
   import { toggleLike as toggleLikeUtil, processFeed } from './utils.js';
   import { auth } from './auth.svelte.js';
 
@@ -10,6 +11,7 @@
   let rawPosts = $state([]);
   let displayItems = $state([]);
   let timelineCursor = $state(null);
+  let selectedThread = $state(null);
 
   // UI State
   let isFetchingMore = $state(false);
@@ -337,6 +339,14 @@
       // Error is logged in utility
     }
   }
+
+  function openThread(post) {
+    selectedThread = post;
+  }
+
+  function closeThread() {
+    selectedThread = null;
+  }
 </script>
 
 <svelte:window onscroll={handleScroll} />
@@ -353,6 +363,10 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} agent={auth.agent} session={auth.session} onClose={closeProfile} />
+
+{#if selectedThread}
+  <ThreadView startPost={selectedThread} agent={auth.agent} onClose={closeThread} onLike={toggleLike} onProfile={showUserProfile} />
+{/if}
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if auth.isLoading && !auth.session}
@@ -385,13 +399,13 @@
               />
 
               {#if entry.items.length > 1}
-                <a
-                  href="/thread/{encodeURIComponent(entry.items[0].post.uri)}"
-                  class="block pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors relative"
+                <button
+                  onclick={() => openThread(entry.items[0])}
+                  class="w-full text-left block pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors relative"
                 >
                   <div class="w-0.5 h-full bg-gray-600 absolute left-[39px] top-0 bottom-0"></div>
                   <span class="ml-2">Show full thread ({entry.items.length + 1} posts)</span>
-                </a>
+                </button>
               {/if}
 
               <FeedPost item={entry.items[0]} connectUp={true} onlike={toggleLike} onprofile={(e) => showUserProfile(e.handle)} />

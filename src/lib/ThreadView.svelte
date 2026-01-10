@@ -15,22 +15,25 @@
   let touchStartX = $state(0);
   let touchStartY = $state(0);
 
-  onMount(async () => {
+  onMount(() => {
     document.body.style.overflow = 'hidden';
-    try {
-      // Fetch the full thread structure
-      const { data } = await agent.getPostThread({ uri: startPost.post.uri });
-      if (data.thread) {
-        threadPosts = flattenThread(data.thread);
+
+    const loadThread = async () => {
+      try {
+        const { data } = await agent.getPostThread({ uri: startPost.post.uri });
+        if (data.thread) {
+          threadPosts = flattenThread(data.thread);
+        }
+      } catch (e) {
+        console.error('Failed to load thread', e);
+        error = 'Could not load full thread.';
+        threadPosts = [startPost];
+      } finally {
+        loading = false;
       }
-    } catch (e) {
-      console.error('Failed to load thread', e);
-      error = 'Could not load full thread.';
-      // Fallback to just showing the passed post if fetch fails
-      threadPosts = [startPost];
-    } finally {
-      loading = false;
-    }
+    };
+
+    loadThread();
 
     return () => {
       document.body.style.overflow = '';
@@ -45,12 +48,11 @@
   function handleTouchEnd(e) {
     const touchEndX = e.changedTouches[0].screenX;
     const touchEndY = e.changedTouches[0].screenY;
-
     const xDiff = touchEndX - touchStartX;
     const yDiff = Math.abs(touchEndY - touchStartY);
 
     // Swipe right (min 75px) and mostly horizontal
-    if (xDiff > 75 && yDiff < 50) {
+    if (xDiff > 75 && yDiff < 100) {
       onClose();
     }
   }
@@ -58,7 +60,7 @@
 
 <div
   class="fixed inset-0 z-50 bg-gray-900 overflow-y-auto"
-  transition:fly={{ x: 300, duration: 200 }}
+  transition:fly={{ x: 500, duration: 300, opacity: 1 }}
   ontouchstart={handleTouchStart}
   ontouchend={handleTouchEnd}
   bind:this={container}
