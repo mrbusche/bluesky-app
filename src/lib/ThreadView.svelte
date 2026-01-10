@@ -45,12 +45,11 @@
   function handleTouchEnd(e) {
     const touchEndX = e.changedTouches[0].screenX;
     const touchEndY = e.changedTouches[0].screenY;
-
     const xDiff = touchEndX - touchStartX;
     const yDiff = Math.abs(touchEndY - touchStartY);
 
     // Swipe right (min 75px) and mostly horizontal
-    if (xDiff > 75 && yDiff < 50) {
+    if (xDiff > 75 && yDiff < 100) {
       onClose();
     }
   }
@@ -58,7 +57,7 @@
 
 <div
   class="fixed inset-0 z-50 bg-gray-900 overflow-y-auto"
-  transition:fly={{ x: 300, duration: 200 }}
+  transition:fly={{ x: 500, duration: 300, opacity: 1 }}
   ontouchstart={handleTouchStart}
   ontouchend={handleTouchEnd}
   bind:this={container}
