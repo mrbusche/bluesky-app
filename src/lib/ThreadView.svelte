@@ -15,22 +15,25 @@
   let touchStartX = $state(0);
   let touchStartY = $state(0);
 
-  onMount(async () => {
+  onMount(() => {
     document.body.style.overflow = 'hidden';
-    try {
-      // Fetch the full thread structure
-      const { data } = await agent.getPostThread({ uri: startPost.post.uri });
-      if (data.thread) {
-        threadPosts = flattenThread(data.thread);
+
+    const loadThread = async () => {
+      try {
+        const { data } = await agent.getPostThread({ uri: startPost.post.uri });
+        if (data.thread) {
+          threadPosts = flattenThread(data.thread);
+        }
+      } catch (e) {
+        console.error('Failed to load thread', e);
+        error = 'Could not load full thread.';
+        threadPosts = [startPost];
+      } finally {
+        loading = false;
       }
-    } catch (e) {
-      console.error('Failed to load thread', e);
-      error = 'Could not load full thread.';
-      // Fallback to just showing the passed post if fetch fails
-      threadPosts = [startPost];
-    } finally {
-      loading = false;
-    }
+    };
+
+    loadThread();
 
     return () => {
       document.body.style.overflow = '';
