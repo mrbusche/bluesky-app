@@ -1,9 +1,9 @@
 <script>
   import { onMount, tick } from 'svelte';
+  import { goto } from '$app/navigation';
   import UserProfileModal from './UserProfileModal.svelte';
   import LoginForm from './LoginForm.svelte';
   import FeedPost from './FeedPost.svelte';
-  import ThreadView from './ThreadView.svelte';
   import { toggleLike as toggleLikeUtil, processFeed } from './utils.js';
   import { auth } from './auth.svelte.js';
 
@@ -11,7 +11,6 @@
   let rawPosts = $state([]);
   let displayItems = $state([]);
   let timelineCursor = $state(null);
-  let selectedThread = $state(null);
 
   // UI State
   let isFetchingMore = $state(false);
@@ -341,11 +340,8 @@
   }
 
   function openThread(post) {
-    selectedThread = post;
-  }
-
-  function closeThread() {
-    selectedThread = null;
+    const encodedUri = encodeURIComponent(post.post.uri);
+    goto(`/thread/${encodedUri}`);
   }
 </script>
 
@@ -363,10 +359,6 @@
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} agent={auth.agent} session={auth.session} onClose={closeProfile} />
-
-{#if selectedThread}
-  <ThreadView startPost={selectedThread} agent={auth.agent} onClose={closeThread} onLike={toggleLike} onProfile={showUserProfile} />
-{/if}
 
 <div class="max-w-2xl mx-auto font-sans">
   {#if auth.isLoading && !auth.session}
