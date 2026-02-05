@@ -31,12 +31,10 @@
       observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (!entry.isIntersecting) {
-              if (!videoEl.paused) {
-                videoEl.pause();
-              }
-            } else if (videoEl.paused) {
+            if (entry.isIntersecting && videoEl.paused) {
               videoEl.play().catch(() => {});
+            } else if (!entry.isIntersecting && !videoEl.paused) {
+              videoEl.pause();
             }
           });
         },
@@ -69,6 +67,5 @@
   {...rest}
   aria-label={alt}
 >
-  <track kind="captions" />
   Your browser does not support the video tag.
 </video>
