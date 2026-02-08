@@ -2,6 +2,7 @@
   import ImageGrid from './ImageGrid.svelte';
   import ExternalCard from './ExternalCard.svelte';
   import VideoPlayer from './VideoPlayer.svelte';
+  import GifPlayer from './GifPlayer.svelte';
   import QuotedPost from './QuotedPost.svelte';
   import EmbedRenderer from './EmbedRenderer.svelte';
 
@@ -27,9 +28,15 @@
   {/if}
 
   {#if embed.$type === 'app.bsky.embed.video#view' && embed.playlist}
-    <div class={className}>
-      <VideoPlayer playlist={embed.playlist} poster={embed.thumbnail} />
-    </div>
+    {#if embed.presentation === 'gif'}
+      <div class={className}>
+        <GifPlayer playlist={embed.playlist} poster={embed.thumbnail} alt={embed.alt} />
+      </div>
+    {:else}
+      <div class={className}>
+        <VideoPlayer playlist={embed.playlist} poster={embed.thumbnail} />
+      </div>
+    {/if}
   {/if}
 
   {#if embed.$type === 'app.bsky.embed.external#view' && embed.external}
@@ -68,9 +75,15 @@
     {/if}
 
     {#if embed.media?.$type === 'app.bsky.embed.video#view' && embed.media.playlist}
-      <div class={className}>
-        <VideoPlayer playlist={embed.media.playlist} poster={embed.media.thumbnail} />
-      </div>
+      {#if embed.media.presentation === 'gif'}
+        <div class={className}>
+          <GifPlayer playlist={embed.media.playlist} poster={embed.media.thumbnail} alt={embed.media.alt} />
+        </div>
+      {:else}
+        <div class={className}>
+          <VideoPlayer playlist={embed.media.playlist} poster={embed.media.thumbnail} />
+        </div>
+      {/if}
     {/if}
 
     {#if embed.record?.record && !embed.record.record.notFound}
