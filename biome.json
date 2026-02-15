@@ -17,6 +17,9 @@
     "lineWidth": 140,
     "lineEnding": "lf"
   },
+  "html": {
+    "experimentalFullSupportEnabled": true
+  },
   "javascript": {
     "formatter": {
       "arrowParentheses": "always",

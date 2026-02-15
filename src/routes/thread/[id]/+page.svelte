@@ -1,11 +1,11 @@
 <script>
   import { onMount } from 'svelte';
-  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { auth } from '$lib/auth.svelte.js';
   import FeedPost from '$lib/FeedPost.svelte';
   import UserProfileModal from '$lib/UserProfileModal.svelte';
-  import { toggleLike as toggleLikeUtil, flattenThread } from '$lib/utils';
-  import { auth } from '$lib/auth.svelte.js';
+  import { flattenThread, toggleLike as toggleLikeUtil } from '$lib/utils';
   import '../../../app.css';
 
   let threadPosts = $state([]);
@@ -15,7 +15,7 @@
   let showProfile = $state(false);
   let profileHandle = $state('');
 
-  let uri = $derived(decodeURIComponent($page.params.id));
+  const uri = $derived(decodeURIComponent($page.params.id));
 
   $effect(() => {
     if (auth.agent && uri) {

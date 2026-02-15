@@ -1,9 +1,9 @@
 <script>
-  import { onMount } from 'svelte';
   import Hls from 'hls.js';
+  import { onMount } from 'svelte';
 
   // Props
-  let {
+  const {
     playlist,
     poster = '',
     controls = true,

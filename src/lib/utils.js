@@ -73,16 +73,17 @@ export const formatPostDate = (dateString) => {
 
   if (diffInMinutes < 60) {
     return `${diffInMinutes}m`;
-  } else if (diffInHours < 24) {
-    return `${diffInHours}h`;
-  } else if (diffInDays <= 31) {
-    return `${diffInDays}d`;
-  } else {
-    const month = postDate.getMonth() + 1;
-    const day = postDate.getDate();
-    const year = postDate.getFullYear();
-    return `${month}/${day}/${year}`;
   }
+  if (diffInHours < 24) {
+    return `${diffInHours}h`;
+  }
+  if (diffInDays <= 31) {
+    return `${diffInDays}d`;
+  }
+  const month = postDate.getMonth() + 1;
+  const day = postDate.getDate();
+  const year = postDate.getFullYear();
+  return `${month}/${day}/${year}`;
 };
 
 export async function toggleLike(agent, post, updateStateCallback) {

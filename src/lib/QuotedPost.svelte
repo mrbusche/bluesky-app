@@ -2,7 +2,7 @@
   import { renderTextWithLinks } from './utils.js';
 
   // Props
-  let { quotedPost = null, className = '', showUserProfile = null, children } = $props();
+  const { quotedPost = null, className = '', showUserProfile = null, children } = $props();
 </script>
 
 {#if quotedPost}

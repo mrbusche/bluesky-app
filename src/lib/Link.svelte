@@ -1,5 +1,6 @@
 <script>
   import { isExternalUrl } from './utils.js';
+
   // Reusable anchor component with sensible defaults for external links
   // Props:
   // - href: string (required)
@@ -8,11 +9,11 @@
   // - rel?: string (defaults to noopener noreferrer for external links)
   // - Any other attributes (class, aria-*, title, etc.) are forwarded via rest props
 
-  let { href = '#', external, target, rel, children, ...rest } = $props();
+  const { href = '#', external, target, rel, children, ...rest } = $props();
 
-  let isExt = $derived(external ?? isExternalUrl(href));
-  let resolvedTarget = $derived(target ?? (isExt ? '_blank' : undefined));
-  let resolvedRel = $derived(rel ?? (isExt ? 'noopener noreferrer' : undefined));
+  const isExt = $derived(external ?? isExternalUrl(href));
+  const resolvedTarget = $derived(target ?? (isExt ? '_blank' : undefined));
+  const resolvedRel = $derived(rel ?? (isExt ? 'noopener noreferrer' : undefined));
 </script>
 
 <a {href} target={resolvedTarget} rel={resolvedRel} {...rest}>

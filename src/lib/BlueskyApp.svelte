@@ -1,11 +1,11 @@
 <script>
   import { onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
-  import UserProfileModal from './UserProfileModal.svelte';
-  import LoginForm from './LoginForm.svelte';
-  import FeedPost from './FeedPost.svelte';
-  import { toggleLike as toggleLikeUtil, processFeed } from './utils.js';
   import { auth } from './auth.svelte.js';
+  import FeedPost from './FeedPost.svelte';
+  import LoginForm from './LoginForm.svelte';
+  import UserProfileModal from './UserProfileModal.svelte';
+  import { processFeed, toggleLike as toggleLikeUtil } from './utils.js';
 
   // --- Svelte State Management ---
   let rawPosts = $state([]);
