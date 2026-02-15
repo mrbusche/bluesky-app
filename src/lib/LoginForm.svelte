@@ -1,6 +1,6 @@
 <script>
-  import Link from './Link.svelte';
   import { auth } from './auth.svelte.js';
+  import Link from './Link.svelte';
 
   let { onLoginSuccess } = $props();
 

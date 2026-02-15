@@ -1,15 +1,15 @@
 <script>
   import { onMount } from 'svelte';
-  import FeedPost from './FeedPost.svelte';
   import { fade, fly } from 'svelte/transition';
   import { flattenThread } from '$lib/utils';
+  import FeedPost from './FeedPost.svelte';
 
-  let { startPost, agent, onClose, onLike, onProfile } = $props();
+  const { startPost, agent, onClose, onLike, onProfile } = $props();
 
   let threadPosts = $state([]);
   let loading = $state(true);
   let error = $state('');
-  let container = $state();
+  const container = $state();
 
   // Swipe detection
   let touchStartX = $state(0);

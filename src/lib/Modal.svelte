@@ -1,8 +1,8 @@
 <script>
-  import { onMount, onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { browser } from '$app/environment';
 
-  let {
+  const {
     open = $bindable(false),
     closeOnOverlay = true,
     closeOnEsc = true,

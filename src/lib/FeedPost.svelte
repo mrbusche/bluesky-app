@@ -1,14 +1,14 @@
 <script>
   import EmbedRenderer from './EmbedRenderer.svelte';
   import FeedPost from './FeedPost.svelte';
-  import { renderTextWithLinks, formatPostDate, sharePost } from './utils.js';
+  import { formatPostDate, renderTextWithLinks, sharePost } from './utils.js';
 
-  let { item, isThreadView = false, connectUp = false, connectDown = false, onlike, onprofile } = $props();
+  const { item, isThreadView = false, connectUp = false, connectDown = false, onlike, onprofile } = $props();
 
-  let isSelfThread = $derived(!isThreadView && item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did);
-  let rootPost = $derived(item.reply?.root);
-  let showRoot = $derived(isSelfThread && rootPost?.$type === 'app.bsky.feed.defs#postView' && !connectUp);
-  let effectiveConnectUp = $derived(connectUp || showRoot);
+  const isSelfThread = $derived(!isThreadView && item.post.record.reply && item.reply?.parent?.author?.did === item.post.author.did);
+  const rootPost = $derived(item.reply?.root);
+  const showRoot = $derived(isSelfThread && rootPost?.$type === 'app.bsky.feed.defs#postView' && !connectUp);
+  const effectiveConnectUp = $derived(connectUp || showRoot);
   let shareStatus = $state('');
 
   function handleLike() {

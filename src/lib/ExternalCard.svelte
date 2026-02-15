@@ -3,7 +3,7 @@
 
   // Generic external link card used for app.bsky.embed.external#view and similar
   // Props: uri (href), title, description?, thumb?
-  let { uri = '', title = '', description = '', thumb = '', className = '' } = $props();
+  const { uri = '', title = '', description = '', thumb = '', className = '' } = $props();
 </script>
 
 <Link href={uri} class={`block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors ${className}`}>

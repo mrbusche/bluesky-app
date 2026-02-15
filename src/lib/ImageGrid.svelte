@@ -2,7 +2,7 @@
   import ImageLink from './ImageLink.svelte';
 
   // images: Array<{ thumb?: string, fullsize?: string, alt?: string }>
-  let { images = [], className = '', link = true } = $props();
+  const { images = [], className = '', link = true } = $props();
 </script>
 
 {#if images && images.length > 0}

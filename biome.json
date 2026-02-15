@@ -1,5 +1,8 @@
 {
   "css": {
+    "formatter": {
+      "quoteStyle": "single"
+    },
     "parser": {
       "tailwindDirectives": true
     }
@@ -16,6 +19,9 @@
     "indentWidth": 2,
     "lineWidth": 140,
     "lineEnding": "lf"
+  },
+  "html": {
+    "experimentalFullSupportEnabled": true
   },
   "javascript": {
     "formatter": {

@@ -39,10 +39,9 @@ function createAuth() {
         session = newAgent.session;
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         return { success: true };
-      } else {
-        error = 'Login failed';
-        return { success: false, error };
       }
+      error = 'Login failed';
+      return { success: false, error };
     } catch (e) {
       console.error('Login error:', e);
       error = e.message || 'Login failed';

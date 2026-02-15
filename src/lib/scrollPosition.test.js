@@ -38,14 +38,14 @@ describe('Scroll Position Storage', () => {
 
       const stored = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
       expect(stored).toBe(timestamp.toString());
-      expect(parseInt(stored, 10)).toBe(timestamp);
+      expect(Number.parseInt(stored, 10)).toBe(timestamp);
     });
 
     it('should parse stored timestamp correctly', () => {
       const timestamp = 1705320000000; // 2024-01-15T12:00:00Z
       localStorage.setItem(LAST_VIEWED_POST_TIMESTAMP_KEY, timestamp.toString());
 
-      const parsed = parseInt(localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY), 10);
+      const parsed = Number.parseInt(localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY), 10);
       expect(parsed).toBe(timestamp);
       expect(new Date(parsed).toISOString()).toBe('2024-01-15T12:00:00.000Z');
     });
@@ -80,7 +80,7 @@ describe('Scroll Position Storage', () => {
       ];
 
       let closest = null;
-      let minDiff = Infinity;
+      let minDiff = Number.POSITIVE_INFINITY;
 
       for (const item of posts) {
         const postTimestamp = new Date(item.post.record.createdAt).getTime();
@@ -107,7 +107,7 @@ describe('Scroll Position Storage', () => {
       ];
 
       let closest = null;
-      let minDiff = Infinity;
+      let minDiff = Number.POSITIVE_INFINITY;
 
       for (const item of posts) {
         const postTimestamp = new Date(item.post.record.createdAt).getTime();
@@ -132,7 +132,7 @@ describe('Scroll Position Storage', () => {
       ];
 
       let closest = null;
-      let minDiff = Infinity;
+      let minDiff = Number.POSITIVE_INFINITY;
 
       for (const item of posts) {
         const postTimestamp = new Date(item.post.record.createdAt).getTime();
@@ -152,7 +152,7 @@ describe('Scroll Position Storage', () => {
     it('should return null when posts array is empty', () => {
       const posts = [];
       let closest = null;
-      let minDiff = Infinity;
+      let minDiff = Number.POSITIVE_INFINITY;
 
       for (const item of posts) {
         const postTimestamp = new Date(item.post.record.createdAt).getTime();

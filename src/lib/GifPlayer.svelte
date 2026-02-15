@@ -1,10 +1,10 @@
 <script>
-  import { onMount } from 'svelte';
   import Hls from 'hls.js';
+  import { onMount } from 'svelte';
 
   // GifPlayer - Renders animated GIFs that come as video embeds with presentation='gif'
   // GIFs in Bluesky use the same HLS playlist format as videos, but should loop and play automatically
-  let { playlist, poster = '', alt = 'Animated GIF', ...rest } = $props();
+  const { playlist, poster = '', alt = 'Animated GIF', ...rest } = $props();
 
   let videoEl;
   let hls;

@@ -1,17 +1,17 @@
 <script>
-  import ImageGrid from './ImageGrid.svelte';
-  import ExternalCard from './ExternalCard.svelte';
-  import VideoPlayer from './VideoPlayer.svelte';
-  import GifPlayer from './GifPlayer.svelte';
-  import QuotedPost from './QuotedPost.svelte';
   import EmbedRenderer from './EmbedRenderer.svelte';
+  import ExternalCard from './ExternalCard.svelte';
+  import GifPlayer from './GifPlayer.svelte';
+  import ImageGrid from './ImageGrid.svelte';
+  import QuotedPost from './QuotedPost.svelte';
+  import VideoPlayer from './VideoPlayer.svelte';
 
   // Props
   // - embed: object | object[]
   // - className: string applied to top-level rendered element for spacing (e.g., mt-3 or mt-2)
   // - clickableImages: when false, image grids render plain <img> instead of <a>
   // - showUserProfile: optional callback for handling mention clicks
-  let { embed = null, className = '', clickableImages = true, showUserProfile = null } = $props();
+  const { embed = null, className = '', clickableImages = true, showUserProfile = null } = $props();
 
   const isArray = (v) => Array.isArray(v);
 </script>
