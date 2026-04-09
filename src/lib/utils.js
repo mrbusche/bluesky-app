@@ -38,11 +38,11 @@ export const renderTextWithLinks = (text, facets) => {
     const linkFeature = facet.features?.find((f) => f.$type === 'app.bsky.richtext.facet#link');
     const mentionFeature = facet.features?.find((f) => f.$type === 'app.bsky.richtext.facet#mention');
 
-    if (linkFeature && linkFeature.uri && isExternalUrl(linkFeature.uri)) {
+    if (linkFeature?.uri && isExternalUrl(linkFeature.uri)) {
       result += `<a href="${escapeHtml(linkFeature.uri)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${escapeHtml(
         facetText,
       )}</a>`;
-    } else if (mentionFeature && mentionFeature.did) {
+    } else if (mentionFeature?.did) {
       // Render mention as a clickable span with data attribute
       result += `<span class="text-blue-400 hover:underline cursor-pointer" data-mention-did="${escapeHtml(mentionFeature.did)}" role="button" tabindex="0">${escapeHtml(
         facetText,
@@ -211,7 +211,7 @@ export function processFeed(posts) {
 
 // Share a post using the Web Share API (with fallback to clipboard)
 export async function sharePost(post) {
-  if (!post || !post.uri || !post.author || !post.author.handle) return { success: false, method: null };
+  if (!post?.uri || !post?.author?.handle) return { success: false, method: null };
 
   // Validate AT Protocol URI format: at://did:plc:xxxxx/app.bsky.feed.post/xxxxx
   // Should have format: at://<did>/<collection>/<rkey>
