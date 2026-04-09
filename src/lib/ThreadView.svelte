@@ -66,7 +66,7 @@
   bind:this={container}
 >
   <header class="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex items-center space-x-4 z-10">
-    <button onclick={onClose} class="text-blue-400 font-bold flex items-center">
+    <button onclick={onClose} type="button" class="text-blue-400 font-bold flex items-center">
       <span class="text-xl mr-1">&larr;</span> Back
     </button>
     <h2 class="text-xl font-bold text-white">Thread</h2>

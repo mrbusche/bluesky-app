@@ -202,7 +202,7 @@
         rkey: SYNC_RKEY,
       });
 
-      if (data.value && data.value.lastViewedUri) {
+      if (data?.value?.lastViewedUri) {
         console.log('Found remote scroll position:', data.value);
 
         // Logic: You might want to compare timestamps here to decide
@@ -334,7 +334,7 @@
         rawPosts = updatePostInList(rawPosts, uri, changes);
         displayItems = updatePostInDisplayItems(displayItems, uri, changes);
       });
-    } catch (error) {
+    } catch {
       // Error is logged in utility
     }
   }
@@ -372,6 +372,7 @@
           <h1 class="text-xl font-bold text-blue-400">{auth.session.handle ? `${auth.session.handle}'s feed` : 'Your Feed'}</h1>
           <button
             onclick={handleLogout}
+            type="button"
             class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-150 ease-in-out"
           >
             Logout
@@ -393,6 +394,7 @@
               {#if entry.items.length > 1}
                 <button
                   onclick={() => openThread(entry.items[0])}
+                  type="button"
                   class="w-full text-left block pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors relative"
                 >
                   <div class="w-0.5 h-full bg-gray-600 absolute left-[39px] top-0 bottom-0"></div>

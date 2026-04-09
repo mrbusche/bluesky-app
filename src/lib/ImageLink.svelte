@@ -8,10 +8,11 @@
   const isExt = $derived(external ?? isExternalUrl(href));
   const resolvedTarget = $derived(target ?? (isExt ? '_blank' : undefined));
   const resolvedRel = $derived(rel ?? (isExt ? 'noopener noreferrer' : undefined));
+  const accessibleLabel = $derived(alt || 'Open image');
 
   const imageClass = 'rounded-lg w-full h-auto object-cover border border-gray-600';
 </script>
 
-<a {href} target={resolvedTarget} rel={resolvedRel} {...rest}>
+<a {href} target={resolvedTarget} rel={resolvedRel} aria-label={accessibleLabel} {...rest}>
   <img {src} {alt} class={imageClass} />
 </a>

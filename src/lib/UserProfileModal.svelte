@@ -74,7 +74,7 @@
 <Modal bind:open {close} ariaLabel="Profile dialog">
   <div class="flex justify-between items-start mb-4">
     <h2 id="profile-dialog-title" class="text-xl font-bold text-blue-400">Profile</h2>
-    <button onclick={close} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
+    <button type="button" onclick={close} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
   </div>
 
   {#if isLoading}
@@ -110,6 +110,7 @@
           <button
             onclick={follow}
             disabled={isFollowing}
+            type="button"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-blue-800 disabled:cursor-not-allowed"
           >
             {#if isFollowing}
@@ -122,6 +123,7 @@
           <button
             onclick={unfollow}
             disabled={isFollowing}
+            type="button"
             class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-green-800 disabled:cursor-not-allowed"
           >
             {#if isFollowing}
