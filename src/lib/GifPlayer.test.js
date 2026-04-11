@@ -1,5 +1,6 @@
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
+
 import GifPlayer from './GifPlayer.svelte';
 
 describe('GifPlayer Component', () => {

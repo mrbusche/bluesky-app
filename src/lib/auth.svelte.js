@@ -1,4 +1,5 @@
 import { AtpAgent } from '@atproto/api';
+
 import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
 
 function createAuth() {

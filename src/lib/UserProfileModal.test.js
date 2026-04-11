@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import UserProfileModal from './UserProfileModal.svelte';
 
 describe('UserProfileModal Component', () => {
