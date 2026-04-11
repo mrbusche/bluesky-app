@@ -14,7 +14,7 @@
     ...rest
   } = $props();
 
-  let videoEl;
+  let videoEl = undefined;
   let hls;
   let observer;
 

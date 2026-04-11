@@ -6,7 +6,7 @@
   // GIFs in Bluesky use the same HLS playlist format as videos, but should loop and play automatically
   const { playlist, poster = '', alt = 'Animated GIF', ...rest } = $props();
 
-  let videoEl;
+  let videoEl = undefined;
   let hls;
   let observer;
 
