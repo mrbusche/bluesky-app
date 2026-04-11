@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
+
 import Link from './Link.svelte';
 
 describe('Link Component', () => {

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
+
 import ExternalCard from './ExternalCard.svelte';
 
 describe('ExternalCard Component', () => {

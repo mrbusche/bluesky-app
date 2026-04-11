@@ -1,5 +1,6 @@
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
+
 import ImageGrid from './ImageGrid.svelte';
 
 describe('ImageGrid Component', () => {

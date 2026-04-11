@@ -1,4 +1,5 @@
 {
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "css": {
     "formatter": {
       "quoteStyle": "single"
@@ -11,8 +12,8 @@
     "includes": ["**", "!node_modules", "!.svelte-kit", "!playwright-report", "!test-results"]
   },
   "formatter": {
-    "enabled": true,
-    "formatWithErrors": false,
+    "enabled": false,
+    "formatWithErrors": true,
     "includes": ["**"],
     "attributePosition": "auto",
     "indentStyle": "space",
@@ -21,7 +22,10 @@
     "lineEnding": "lf"
   },
   "html": {
-    "experimentalFullSupportEnabled": true
+    "experimentalFullSupportEnabled": true,
+    "formatter": {
+      "indentScriptAndStyle": true
+    }
   },
   "javascript": {
     "formatter": {
@@ -42,18 +46,14 @@
   },
   "linter": {
     "rules": {
-      "style": {
-        "noParameterAssign": "error",
-        "useAsConstAssertion": "error",
-        "useDefaultParameterLast": "error",
-        "useEnumInitializers": "error",
-        "useSelfClosingElements": "error",
-        "useSingleVarDeclarator": "error",
-        "noUnusedTemplateLiteral": "error",
-        "useNumberNamespace": "error",
-        "noInferrableTypes": "error",
-        "noUselessElse": "error"
-      }
+      "a11y": "error",
+      "complexity": "error",
+      "correctness": "error",
+      "nursery": "error",
+      "performance": "error",
+      "security": "error",
+      "style": "error",
+      "suspicious": "error"
     }
   }
 }
