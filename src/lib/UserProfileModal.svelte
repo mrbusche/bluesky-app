@@ -45,7 +45,7 @@
       const { uri } = await agent.follow(profile.did);
       profile = {
         ...profile,
-        viewer: { ...(profile.viewer ?? {}), following: uri },
+        viewer: { ...profile.viewer, following: uri },
       };
     } catch (e) {
       console.error('Follow error:', e);
