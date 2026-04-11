@@ -13,17 +13,13 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "lint": "oxlint",
-    "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check",
-    "prettier:fix": "prettier --write .",
-    "biome:fix": "npx @biomejs/biome check --write ."
+    "prettier:fix": "oxfmt"
   },
   "dependencies": {
     "@atproto/api": "0.19.8",
     "hls.js": "1.6.15"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.11",
     "@playwright/test": "1.59.1",
     "@sveltejs/adapter-auto": "7.0.1",
     "@sveltejs/kit": "2.57.1",
