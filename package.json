@@ -16,7 +16,7 @@
     "fmt": "oxfmt"
   },
   "dependencies": {
-    "@atproto/api": "0.19.18",
+    "@atproto/api": "0.20.4",
     "hls.js": "1.6.16"
   },
   "devDependencies": {
@@ -29,14 +29,14 @@
     "@testing-library/svelte": "5.3.1",
     "happy-dom": "20.9.0",
     "jsdom": "29.1.1",
-    "oxfmt": "0.50.0",
-    "oxlint": "1.65.0",
-    "svelte": "5.55.7",
+    "oxfmt": "0.51.0",
+    "oxlint": "1.66.0",
+    "svelte": "5.55.9",
     "svelte-check": "4.4.8",
     "tailwindcss": "4.3.0",
     "tslib": "2.8.1",
     "typescript": "6.0.3",
-    "vite": "8.0.13",
-    "vitest": "4.1.6"
+    "vite": "8.0.14",
+    "vitest": "4.1.7"
   }
 }
