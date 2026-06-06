@@ -89,7 +89,8 @@ export const formatPostDate = (dateString) => {
 export async function toggleLike(agent, post, updateStateCallback) {
   if (!agent || !post) return;
 
-  const isLiked = !!post.viewer?.like;
+  const likeUri = post.viewer?.like;
+  const isLiked = !!likeUri;
   const uri = post.uri;
   const cid = post.cid;
 
@@ -104,7 +105,7 @@ export async function toggleLike(agent, post, updateStateCallback) {
 
   try {
     if (isLiked) {
-      await agent.deleteLike(post.viewer.like);
+      await agent.deleteLike(likeUri);
       // Final update (success) - confirm removal
       updateStateCallback(uri, {
         viewer: { ...post.viewer, like: undefined },
