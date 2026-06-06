@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { escapeHtml, formatPostDate, isExternalUrl, renderTextWithLinks, sharePost } from './utils.js';
+import { escapeHtml, formatPostDate, isExternalUrl, renderTextWithLinks, sharePost, toggleLike } from './utils.js';
 
 describe('isExternalUrl', () => {
   it('should return true for http URLs', () => {
@@ -361,5 +361,32 @@ describe('sharePost', () => {
     const result = await sharePost(postWithoutAuthor);
 
     expect(result).toEqual({ success: false, method: null });
+  });
+});
+
+describe('toggleLike', () => {
+  it('should pass the original like URI to deleteLike when unliking', async () => {
+    const agent = {
+      deleteLike: vi.fn().mockResolvedValue(undefined),
+    };
+    const post = {
+      uri: 'at://did:plc:abc123/app.bsky.feed.post/xyz789',
+      cid: 'cid123',
+      likeCount: 7,
+      viewer: {
+        like: 'at://did:plc:abc123/app.bsky.feed.like/like123',
+      },
+    };
+    const updateStateCallback = vi.fn((uri, changes) => {
+      Object.assign(post, changes);
+    });
+
+    await toggleLike(agent, post, updateStateCallback);
+
+    expect(agent.deleteLike).toHaveBeenCalledWith('at://did:plc:abc123/app.bsky.feed.like/like123');
+    expect(updateStateCallback).toHaveBeenCalledWith(
+      'at://did:plc:abc123/app.bsky.feed.post/xyz789',
+      expect.objectContaining({ likeCount: 6 }),
+    );
   });
 });
