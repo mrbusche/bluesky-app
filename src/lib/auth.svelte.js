@@ -17,6 +17,7 @@ class AuthState {
         this.agent = newAgent;
         this.session = newAgent.session;
       } catch (e) {
+        console.error('Failed to resume session:', e);
         localStorage.removeItem(SESSION_KEY);
         this.session = null;
         this.agent = null;
