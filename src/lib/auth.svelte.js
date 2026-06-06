@@ -2,83 +2,62 @@ import { AtpAgent } from '@atproto/api';
 
 import { BLUESKY_SERVICE, SESSION_KEY } from './constants.js';
 
-function createAuth() {
-  let agent = $state(null);
-  let session = $state(null);
-  let isLoading = $state(true);
-  let error = $state(null);
+class AuthState {
+  agent = $state(null);
+  session = $state(null);
+  isLoading = $state(true);
+  error = $state(null);
 
-  async function init() {
+  async init() {
     const savedSession = localStorage.getItem(SESSION_KEY);
     if (savedSession) {
       try {
         const newAgent = new AtpAgent({ service: BLUESKY_SERVICE });
-        const sessionData = JSON.parse(savedSession);
-        await newAgent.resumeSession(sessionData);
-        agent = newAgent;
-        session = newAgent.session;
-        console.log('Session resumed successfully.');
+        await newAgent.resumeSession(JSON.parse(savedSession));
+        this.agent = newAgent;
+        this.session = newAgent.session;
       } catch (e) {
-        console.error('Failed to resume session:', e);
         localStorage.removeItem(SESSION_KEY);
-        session = null;
-        agent = null;
+        this.session = null;
+        this.agent = null;
       }
     }
-    isLoading = false;
+    this.isLoading = false;
   }
 
-  async function login(identifier, password) {
-    isLoading = true;
-    error = null;
+  async login(identifier, password) {
+    this.isLoading = true;
+    this.error = null;
     try {
       const newAgent = new AtpAgent({ service: BLUESKY_SERVICE });
       const response = await newAgent.login({ identifier, password });
 
       if (response.success) {
-        agent = newAgent;
-        session = newAgent.session;
-        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        this.agent = newAgent;
+        this.session = newAgent.session;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(this.session));
         return { success: true };
       }
-      error = 'Login failed';
-      return { success: false, error };
+      this.error = 'Login failed';
+      return { success: false, error: this.error };
     } catch (e) {
       console.error('Login error:', e);
-      error = e.message || 'Login failed';
-      return { success: false, error };
+      this.error = e.message || 'Login failed';
+      return { success: false, error: this.error };
     } finally {
-      isLoading = false;
+      this.isLoading = false;
     }
   }
 
-  function logout() {
+  logout() {
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem('blueskyLastViewedPostTimestamp');
     localStorage.removeItem('blueskyLastViewedPostUri');
-    session = null;
-    agent = null;
+    this.session = null;
+    this.agent = null;
     // Optional: reload page to clear all state
     window.location.reload();
   }
-
-  return {
-    get agent() {
-      return agent;
-    },
-    get session() {
-      return session;
-    },
-    get isLoading() {
-      return isLoading;
-    },
-    get error() {
-      return error;
-    },
-    init,
-    login,
-    logout,
-  };
 }
 
-export const auth = createAuth();
+export const auth = new AuthState();
