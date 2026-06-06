@@ -9,7 +9,7 @@
 
   // --- Svelte State Management ---
   let rawPosts = $state([]);
-  let displayItems = $state([]);
+  let displayItems = $derived(processFeed(rawPosts));
   let timelineCursor = $state(null);
 
   // UI State
@@ -78,7 +78,7 @@
           return false;
         });
 
-        rawPosts = [...rawPosts, ...newPosts];
+        rawPosts.push(...newPosts);
         displayItems = processFeed(rawPosts);
         timelineCursor = response.data.cursor;
       } else {
