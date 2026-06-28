@@ -11,9 +11,9 @@
     <img src={thumb} alt={title} class="w-full h-48 object-cover bg-gray-700" />
   {/if}
   <div class="p-3 bg-gray-800">
-    <div class="text-white font-semibold text-sm line-clamp-1">{title}</div>
+    <h2 class="text-white font-semibold text-sm line-clamp-1">{title}</h2>
     {#if description}
-      <div class="text-gray-400 text-xs mt-1 line-clamp-2">{description}</div>
+      <p class="text-gray-400 text-xs mt-1 line-clamp-2">{description}</p>
     {/if}
     <div class="text-gray-500 text-xs mt-1 truncate">{uri}</div>
   </div>

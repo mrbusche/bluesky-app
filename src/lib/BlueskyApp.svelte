@@ -1,5 +1,5 @@
 <script>
-  import { onMount, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { auth } from './auth.svelte.js';
   import FeedPost from './FeedPost.svelte';
@@ -32,9 +32,17 @@
 
   // --- Lifecycle & Initialization ---
   onMount(async () => {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('pagehide', flushPendingScrollSave);
+    }
+
     await auth.init();
     if (auth.session) {
       await fetchTimeline();
+      await tick();
+      ensurePostObserver();
+      observeRenderedPosts();
       // First try local restore (fastest)
       await restoreScrollPosition();
       // Then check remote to see if another device is ahead
@@ -42,9 +50,30 @@
     }
   });
 
+  onDestroy(() => {
+    if (scrollSaveTimeout) clearTimeout(scrollSaveTimeout);
+    if (remoteSyncTimeout) clearTimeout(remoteSyncTimeout);
+
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', flushPendingScrollSave);
+    }
+
+    if (postObserver) {
+      postObserver.disconnect();
+      postObserver = null;
+    }
+
+    visiblePostElements.clear();
+    observedPostElements.clear();
+  });
+
   async function handleLoginSuccess() {
     try {
       await fetchTimeline();
+      await tick();
+      ensurePostObserver();
+      observeRenderedPosts();
       await restoreScrollPosition();
       await checkRemoteScrollPosition();
     } catch (error) {
@@ -95,9 +124,135 @@
     }
   }
 
+  function flushPendingScrollSave() {
+    if (scrollSaveTimeout) {
+      clearTimeout(scrollSaveTimeout);
+      scrollSaveTimeout = undefined;
+    }
+    saveLocalScrollPosition();
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState === 'hidden') {
+      flushPendingScrollSave();
+    }
+  }
+
+  $effect(() => {
+    if (!auth.session) return;
+
+    displayItems.length;
+    tick().then(() => {
+      ensurePostObserver();
+      observeRenderedPosts();
+      updateCurrentVisiblePostUri(true);
+    });
+  });
+
   // --- Scroll & Sync Handling ---
   let scrollSaveTimeout; // For local storage (fast)
   let remoteSyncTimeout; // For remote repo sync (slow/debounced)
+  let currentVisiblePostUri = $state(null);
+  let postObserver = null;
+  const observedPostElements = new Set();
+  const visiblePostElements = new Set();
+
+  function getHeaderHeight() {
+    const header = document.querySelector('header');
+    return header ? header.offsetHeight : 0;
+  }
+
+  function getFirstVisiblePostUriByScan() {
+    const headerHeight = getHeaderHeight();
+    const firstVisiblePost = Array.from(document.querySelectorAll('main article[id]')).find(
+      (el) => el.getBoundingClientRect().bottom > headerHeight,
+    );
+    return firstVisiblePost ? firstVisiblePost.id : null;
+  }
+
+  function getCurrentPositionUri() {
+    if (currentVisiblePostUri) return currentVisiblePostUri;
+    const fallbackUri = getFirstVisiblePostUriByScan();
+    currentVisiblePostUri = fallbackUri;
+    return fallbackUri;
+  }
+
+  function updateCurrentVisiblePostUri(allowFallbackScan = false) {
+    const headerHeight = getHeaderHeight();
+    let closestElement = null;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    for (const el of Array.from(visiblePostElements)) {
+      if (!el.isConnected) {
+        visiblePostElements.delete(el);
+        observedPostElements.delete(el);
+        continue;
+      }
+
+      const rect = el.getBoundingClientRect();
+      if (rect.bottom <= headerHeight) continue;
+
+      const distance = Math.abs(rect.top - headerHeight);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestElement = el;
+      }
+    }
+
+    if (closestElement?.id) {
+      currentVisiblePostUri = closestElement.id;
+      return;
+    }
+
+    if (allowFallbackScan) {
+      currentVisiblePostUri = getFirstVisiblePostUriByScan();
+    }
+  }
+
+  function observeRenderedPosts() {
+    if (!postObserver) return;
+
+    const postElements = document.querySelectorAll('main article[id]');
+    postElements.forEach((el) => {
+      if (!observedPostElements.has(el)) {
+        observedPostElements.add(el);
+        postObserver.observe(el);
+      }
+    });
+
+    for (const el of Array.from(observedPostElements)) {
+      if (!el.isConnected) {
+        observedPostElements.delete(el);
+        visiblePostElements.delete(el);
+      }
+    }
+  }
+
+  function ensurePostObserver() {
+    if (typeof window === 'undefined' || postObserver || !('IntersectionObserver' in window)) return;
+
+    const topOffset = getHeaderHeight() + 16;
+    postObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0) {
+            visiblePostElements.add(entry.target);
+          } else {
+            visiblePostElements.delete(entry.target);
+          }
+        });
+        updateCurrentVisiblePostUri(true);
+      },
+      {
+        root: null,
+        rootMargin: `-${topOffset}px 0px -70% 0px`,
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+      },
+    );
+
+    observeRenderedPosts();
+    updateCurrentVisiblePostUri(true);
+  }
 
   function handleScroll() {
     // 1. Infinite Scroll Check
@@ -122,7 +277,7 @@
     } else {
       // Debounce sync for 3 seconds to avoid rate limits
       remoteSyncTimeout = setTimeout(() => {
-        const currentUri = getFirstVisiblePostUri();
+        const currentUri = getCurrentPositionUri();
         if (currentUri) {
           syncToRepo(currentUri);
         }
@@ -130,17 +285,8 @@
     }
   }
 
-  function getFirstVisiblePostUri() {
-    const header = document.querySelector('header');
-    const headerHeight = header ? header.offsetHeight : 0;
-    const firstVisiblePost = Array.from(document.querySelectorAll('main article')).find(
-      (el) => el.getBoundingClientRect().bottom > headerHeight,
-    );
-    return firstVisiblePost ? firstVisiblePost.id : null;
-  }
-
   function saveLocalScrollPosition() {
-    const postUri = getFirstVisiblePostUri();
+    const postUri = getCurrentPositionUri();
     if (postUri) {
       localStorage.setItem(LAST_VIEWED_POST_URI_KEY, postUri);
       const post = rawPosts.find((item) => item.post.uri === postUri);
@@ -234,41 +380,94 @@
     }
   }
 
-  // --- Existing Restore Logic (Simplified) ---
-  async function restoreScrollPosition() {
-    const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
+  function getPostTimestampMs(item) {
+    const createdAt = item?.post?.record?.createdAt;
+    if (!createdAt) return null;
+    const timestamp = new Date(createdAt).getTime();
+    return Number.isFinite(timestamp) ? timestamp : null;
+  }
 
-    // 1. Try URI Match
-    if (savedUri) {
-      isRestoringScroll = true;
-      try {
-        let elementToRestore = null;
-        let attempts = 0;
-        const MAX_FETCH_ATTEMPTS = 10;
+  function findClosestRenderedPostByTimestamp(targetTimestamp) {
+    const postElements = document.querySelectorAll('main article[id]');
+    let closestElement = null;
+    let closestUri = null;
+    let closestTimestamp = null;
+    let minDiff = Number.POSITIVE_INFINITY;
 
-        while (!elementToRestore && timelineCursor && attempts < MAX_FETCH_ATTEMPTS) {
-          await tick();
-          elementToRestore = document.getElementById(savedUri);
-          if (!elementToRestore) {
-            await fetchTimeline();
-            attempts++;
-          }
-        }
+    for (const element of postElements) {
+      const uri = element.id;
+      const post = rawPosts.find((item) => item.post.uri === uri);
+      if (!post) continue;
 
-        if (elementToRestore) {
-          scrollToElement(elementToRestore);
-          isRestoringScroll = false;
-          return;
-        }
-      } catch (error) {
-        console.error('Error during URI-based scroll restoration:', error);
+      const postTimestamp = getPostTimestampMs(post);
+      if (postTimestamp === null) continue;
+
+      const diff = Math.abs(postTimestamp - targetTimestamp);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestElement = element;
+        closestUri = uri;
+        closestTimestamp = postTimestamp;
       }
     }
 
-    // 2. Fallback to Timestamp Match (existing logic...)
-    // ... [Include your existing timestamp logic here if desired] ...
+    if (!closestElement || !closestUri || closestTimestamp === null) return null;
+    return { element: closestElement, uri: closestUri, timestamp: closestTimestamp };
+  }
 
-    isRestoringScroll = false;
+  async function findElementWithTimelineFetch(matchFn) {
+    let attempts = 0;
+    const MAX_FETCH_ATTEMPTS = 10;
+
+    while (attempts <= MAX_FETCH_ATTEMPTS) {
+      await tick();
+      const match = matchFn();
+      if (match) return match;
+
+      if (!timelineCursor || attempts === MAX_FETCH_ATTEMPTS) break;
+      await fetchTimeline();
+      attempts++;
+    }
+
+    return null;
+  }
+
+  async function restoreScrollPosition() {
+    const savedUri = localStorage.getItem(LAST_VIEWED_POST_URI_KEY);
+    const savedTimestampRaw = localStorage.getItem(LAST_VIEWED_POST_TIMESTAMP_KEY);
+    const savedTimestamp = savedTimestampRaw ? Number.parseInt(savedTimestampRaw, 10) : Number.NaN;
+    const hasTimestamp = Number.isFinite(savedTimestamp);
+
+    if (!savedUri && !hasTimestamp) return;
+
+    isRestoringScroll = true;
+    try {
+      // 1. Try URI Match
+      if (savedUri) {
+        const elementToRestore = await findElementWithTimelineFetch(() => document.getElementById(savedUri));
+        if (elementToRestore) {
+          scrollToElement(elementToRestore);
+          currentVisiblePostUri = savedUri;
+          return;
+        }
+      }
+
+      // 2. Fallback to closest timestamp match among rendered posts
+      if (hasTimestamp) {
+        const closestMatch = await findElementWithTimelineFetch(() => findClosestRenderedPostByTimestamp(savedTimestamp));
+        if (closestMatch) {
+          scrollToElement(closestMatch.element);
+          currentVisiblePostUri = closestMatch.uri;
+          localStorage.setItem(LAST_VIEWED_POST_URI_KEY, closestMatch.uri);
+          localStorage.setItem(LAST_VIEWED_POST_TIMESTAMP_KEY, closestMatch.timestamp.toString());
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring scroll position:', error);
+    } finally {
+      isRestoringScroll = false;
+    }
   }
 
   function scrollToElement(element) {
