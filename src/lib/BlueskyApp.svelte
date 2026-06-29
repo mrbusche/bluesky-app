@@ -184,6 +184,7 @@
 
     for (const el of Array.from(visiblePostElements)) {
       if (!el.isConnected) {
+        postObserver?.unobserve(el);
         visiblePostElements.delete(el);
         observedPostElements.delete(el);
         continue;
@@ -215,6 +216,7 @@
     const postElements = document.querySelectorAll('main article[id]');
     postElements.forEach((el) => {
       if (!observedPostElements.has(el)) {
+        postObserver.unobserve(el);
         observedPostElements.add(el);
         postObserver.observe(el);
       }
