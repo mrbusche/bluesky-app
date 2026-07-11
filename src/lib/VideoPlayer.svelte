@@ -72,7 +72,7 @@
   {playsinline}
   {muted}
   {...rest}
-  class="rounded-lg w-full h-auto border border-gray-600"
+  class="h-auto w-full rounded-lg border border-gray-600"
 >
   Your browser does not support the video tag.
 </video>

@@ -6,15 +6,15 @@
   const { uri = '', title = '', description = '', thumb = '', className = '' } = $props();
 </script>
 
-<Link href={uri} class={`block border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors ${className}`}>
+<Link href={uri} class={`block overflow-hidden rounded-lg border border-gray-600 transition-colors hover:border-gray-500 ${className}`}>
   {#if thumb}
-    <img src={thumb} alt={title} class="w-full h-48 object-cover bg-gray-700" />
+    <img src={thumb} alt={title} class="h-48 w-full bg-gray-700 object-cover" />
   {/if}
-  <div class="p-3 bg-gray-800">
-    <h2 class="text-white font-semibold text-sm line-clamp-1">{title}</h2>
+  <div class="bg-gray-800 p-3">
+    <h2 class="line-clamp-1 text-sm font-semibold text-white">{title}</h2>
     {#if description}
-      <p class="text-gray-400 text-xs mt-1 line-clamp-2">{description}</p>
+      <p class="mt-1 line-clamp-2 text-xs text-gray-400">{description}</p>
     {/if}
-    <div class="text-gray-500 text-xs mt-1 truncate">{uri}</div>
+    <div class="mt-1 truncate text-xs text-gray-500">{uri}</div>
   </div>
 </Link>

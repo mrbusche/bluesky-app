@@ -72,14 +72,14 @@
 </script>
 
 <Modal bind:open {close} ariaLabel="Profile dialog">
-  <div class="flex justify-between items-start mb-4">
+  <div class="mb-4 flex items-start justify-between">
     <h2 id="profile-dialog-title" class="text-xl font-bold text-blue-400">Profile</h2>
-    <button type="button" onclick={close} class="text-gray-400 hover:text-white text-2xl leading-none" aria-label="Close"> &times; </button>
+    <button type="button" onclick={close} class="text-2xl leading-none text-gray-400 hover:text-white" aria-label="Close"> &times; </button>
   </div>
 
   {#if isLoading}
-    <div class="flex justify-center items-center py-8">
-      <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+    <div class="flex items-center justify-center py-8">
+      <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-400 border-t-transparent"></div>
     </div>
   {:else if profile}
     <div class="space-y-4">
@@ -87,16 +87,16 @@
         <img
           src={profile.avatar || 'https://placehold.co/64x64/1a202c/ffffff?text=?'}
           alt={profile.displayName}
-          class="w-16 h-16 rounded-full bg-gray-600"
+          class="h-16 w-16 rounded-full bg-gray-600"
         />
         <div class="flex-1">
-          <h3 class="font-bold text-white text-lg">{profile.displayName || profile.handle}</h3>
-          <p class="text-gray-400 text-sm">@{profile.handle}</p>
+          <h3 class="text-lg font-bold text-white">{profile.displayName || profile.handle}</h3>
+          <p class="text-sm text-gray-400">@{profile.handle}</p>
         </div>
       </div>
 
       {#if profile.description}
-        <p class="text-white whitespace-pre-wrap break-words">{profile.description}</p>
+        <p class="break-words whitespace-pre-wrap text-white">{profile.description}</p>
       {/if}
 
       <div class="flex space-x-4 text-sm text-gray-400">
@@ -111,7 +111,7 @@
             onclick={follow}
             disabled={isFollowing}
             type="button"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-blue-800 disabled:cursor-not-allowed"
+            class="w-full rounded-md bg-blue-600 px-4 py-2 font-bold text-white transition duration-150 ease-in-out hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-800"
           >
             {#if isFollowing}
               Following...
@@ -124,7 +124,7 @@
             onclick={unfollow}
             disabled={isFollowing}
             type="button"
-            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:bg-green-800 disabled:cursor-not-allowed"
+            class="w-full rounded-md bg-green-600 px-4 py-2 font-bold text-white transition duration-150 ease-in-out hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-800"
           >
             {#if isFollowing}
               Unfollowing...
@@ -136,10 +136,10 @@
       {/if}
 
       {#if error}
-        <p class="text-red-400 text-sm text-center">{error}</p>
+        <p class="text-center text-sm text-red-400">{error}</p>
       {/if}
     </div>
   {:else if error}
-    <p class="text-red-400 text-center py-4">{error}</p>
+    <p class="py-4 text-center text-red-400">{error}</p>
   {/if}
 </Modal>

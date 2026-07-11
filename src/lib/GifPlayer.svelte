@@ -63,7 +63,7 @@
   loop
   playsinline
   preload="metadata"
-  class="rounded-lg w-full h-auto border border-gray-600"
+  class="h-auto w-full rounded-lg border border-gray-600"
   {...rest}
   aria-label={alt}
 >

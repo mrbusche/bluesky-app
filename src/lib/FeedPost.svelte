@@ -46,15 +46,15 @@
   <FeedPost item={{ post: rootPost }} isThreadView={true} connectDown={true} {onlike} {onprofile} />
 {/if}
 
-<article class="p-4 border-b border-gray-700 flex space-x-4 {isThreadView ? 'bg-gray-900' : ''} relative" id={item.post.uri}>
-  <div class="flex-shrink-0 flex flex-col items-center relative self-stretch" style="width: 48px;">
+<article class="flex space-x-4 border-b border-gray-700 p-4 {isThreadView ? 'bg-gray-900' : ''} relative" id={item.post.uri}>
+  <div class="relative flex flex-shrink-0 flex-col items-center self-stretch" style="width: 48px;">
     {#if effectiveConnectUp}
-      <div class="absolute top-[-16px] h-[16px] w-0.5 bg-gray-600 left-1/2 -translate-x-1/2"></div>
+      <div class="absolute top-[-16px] left-1/2 h-[16px] w-0.5 -translate-x-1/2 bg-gray-600"></div>
     {/if}
 
     <button
       type="button"
-      class="w-12 h-12 rounded-full bg-gray-600 cursor-pointer z-10 relative p-0 border-none"
+      class="relative z-10 h-12 w-12 cursor-pointer rounded-full border-none bg-gray-600 p-0"
       onclick={(e) => {
         e.stopPropagation();
         handleProfileClick(item.post.author.handle);
@@ -64,18 +64,18 @@
       <img
         src={item.post.author.avatar || 'https://placehold.co/48x48/1a202c/ffffff?text=?'}
         alt={item.post.author.displayName}
-        class="w-full h-full rounded-full"
+        class="h-full w-full rounded-full"
       />
     </button>
 
     {#if connectDown}
-      <div class="absolute top-[48px] bottom-[-16px] w-0.5 bg-gray-600 left-1/2 -translate-x-1/2"></div>
+      <div class="absolute top-[48px] bottom-[-16px] left-1/2 w-0.5 -translate-x-1/2 bg-gray-600"></div>
     {/if}
   </div>
 
   <div class="flex-1 overflow-hidden">
     {#if item.reason && item.reason.$type === 'app.bsky.feed.defs#reasonRepost'}
-      <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+      <div class="mb-2 flex items-center space-x-2 text-sm text-gray-400">
         <span>🔁</span>
         <span>Reposted by</span>
         <span class="font-semibold text-gray-300">{item.reason.by.displayName || item.reason.by.handle}</span>
@@ -83,7 +83,7 @@
     {/if}
 
     {#if isSelfThread && !showRoot}
-      <div class="flex items-center space-x-2 text-gray-400 text-sm mb-2">
+      <div class="mb-2 flex items-center space-x-2 text-sm text-gray-400">
         <span>🧵</span>
         <span>Thread</span>
       </div>
@@ -97,7 +97,7 @@
             handleProfileClick(item.post.author.handle);
           }}
           type="button"
-          class="font-bold text-white truncate hover:underline cursor-pointer"
+          class="cursor-pointer truncate font-bold text-white hover:underline"
           aria-label={`View profile of ${item.post.author.displayName || item.post.author.handle}`}
         >
           {item.post.author.displayName || item.post.author.handle}
@@ -108,23 +108,23 @@
             handleProfileClick(item.post.author.handle);
           }}
           type="button"
-          class="text-sm truncate hidden sm:inline hover:underline cursor-pointer"
+          class="hidden cursor-pointer truncate text-sm hover:underline sm:inline"
           aria-label={`View profile @${item.post.author.handle}`}
         >
           @{item.post.author.handle}
         </button>
-        <span class="text-gray-500 flex-shrink-0">&middot;</span>
-        <span class="text-gray-500 text-sm flex-shrink-0">{formatPostDate(item.post.record.createdAt)}</span>
+        <span class="flex-shrink-0 text-gray-500">&middot;</span>
+        <span class="flex-shrink-0 text-sm text-gray-500">{formatPostDate(item.post.record.createdAt)}</span>
       </div>
 
-      <div class="flex items-center space-x-2 flex-shrink-0 ml-2">
+      <div class="ml-2 flex flex-shrink-0 items-center space-x-2">
         <button
           onclick={(e) => {
             e.stopPropagation();
             handleShare();
           }}
           type="button"
-          class="flex items-center space-x-1 hover:text-blue-400 transition-colors relative"
+          class="relative flex items-center space-x-1 transition-colors hover:text-blue-400"
           aria-label="Share post"
           title={shareStatus === 'copied' ? 'Copied to clipboard!' : 'Share post'}
         >
@@ -137,7 +137,7 @@
             </svg>
           </span>
           {#if shareStatus === 'copied'}
-            <span class="text-xs absolute -bottom-5 left-0 text-blue-400 whitespace-nowrap" role="status" aria-live="polite">Copied!</span>
+            <span class="absolute -bottom-5 left-0 text-xs whitespace-nowrap text-blue-400" role="status" aria-live="polite">Copied!</span>
           {/if}
         </button>
         <button
@@ -146,7 +146,7 @@
             handleLike();
           }}
           type="button"
-          class="flex items-center space-x-1 hover:text-red-400 transition-colors"
+          class="flex items-center space-x-1 transition-colors hover:text-red-400"
           aria-label={item.post.viewer?.like ? 'Unlike post' : 'Like post'}
         >
           <span class="text-lg">{item.post.viewer?.like ? '❤️' : '🤍'}</span>
@@ -158,7 +158,7 @@
     </div>
 
     <div
-      class="text-white mt-1 whitespace-pre-wrap break-words"
+      class="mt-1 break-words whitespace-pre-wrap text-white"
       onclick={handleMentionClick}
       onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && handleMentionClick(e)}
       role="button"

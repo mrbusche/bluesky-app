@@ -1,6 +1,7 @@
 <script>
-  import { onDestroy, onMount, tick } from 'svelte';
   import { goto } from '$app/navigation';
+  import { onDestroy, onMount, tick } from 'svelte';
+
   import { auth } from './auth.svelte.js';
   import FeedPost from './FeedPost.svelte';
   import LoginForm from './LoginForm.svelte';
@@ -496,7 +497,7 @@
 
     try {
       await toggleLikeUtil(auth.agent, post, (uri, changes) => {
-        const targetPost = rawPosts.find(entry => entry.post.uri === uri);
+        const targetPost = rawPosts.find((entry) => entry.post.uri === uri);
         if (targetPost) {
           Object.assign(targetPost.post, changes);
         }
@@ -515,32 +516,32 @@
 <svelte:window onscroll={handleScroll} />
 
 {#if isRestoringScroll}
-  <div class="fixed bottom-4 right-4 bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg z-20 flex items-center space-x-2">
-    <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+  <div class="fixed right-4 bottom-4 z-20 flex items-center space-x-2 rounded-lg bg-gray-700 px-4 py-2 text-white shadow-lg">
+    <div class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
     <span>Restoring position...</span>
   </div>
 {/if}
 
 {#if isSyncing}
-  <div class="fixed bottom-4 left-4 text-xs text-gray-500 z-20">Saving position...</div>
+  <div class="fixed bottom-4 left-4 z-20 text-xs text-gray-500">Saving position...</div>
 {/if}
 
 <UserProfileModal open={showProfile} handle={profileHandle} agent={auth.agent} session={auth.session} onClose={closeProfile} />
 
-<div class="max-w-2xl mx-auto font-sans">
+<div class="mx-auto max-w-2xl font-sans">
   {#if auth.isLoading && !auth.session}
-    <div class="min-h-screen flex items-center justify-center">
-      <div class="w-10 h-10 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+    <div class="flex min-h-screen items-center justify-center">
+      <div class="h-10 w-10 animate-spin rounded-full border-4 border-blue-400 border-t-transparent"></div>
     </div>
   {:else if auth.session}
     <div>
-      <header class="sticky top-0 bg-gray-900 bg-opacity-80 backdrop-blur-md z-20 border-b border-gray-700">
-        <div class="flex justify-between items-center p-4">
+      <header class="bg-opacity-80 sticky top-0 z-20 border-b border-gray-700 bg-gray-900 backdrop-blur-md">
+        <div class="flex items-center justify-between p-4">
           <h1 class="text-xl font-bold text-blue-400">{auth.session.handle ? `${auth.session.handle}'s feed` : 'Your Feed'}</h1>
           <button
             onclick={handleLogout}
             type="button"
-            class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-150 ease-in-out"
+            class="rounded-md bg-red-600 px-4 py-2 text-sm font-bold text-white transition duration-150 ease-in-out hover:bg-red-700"
           >
             Logout
           </button>
@@ -562,9 +563,9 @@
                 <button
                   onclick={() => openThread(entry.items[0])}
                   type="button"
-                  class="w-full text-left block pl-16 py-2 hover:bg-gray-800 cursor-pointer flex items-center text-blue-400 text-sm font-semibold transition-colors relative"
+                  class="relative block flex w-full cursor-pointer items-center py-2 pl-16 text-left text-sm font-semibold text-blue-400 transition-colors hover:bg-gray-800"
                 >
-                  <div class="w-0.5 h-full bg-gray-600 absolute left-[39px] top-0 bottom-0"></div>
+                  <div class="absolute top-0 bottom-0 left-[39px] h-full w-0.5 bg-gray-600"></div>
                   <span class="ml-2">Show full thread ({entry.items.length + 1} posts)</span>
                 </button>
               {/if}
@@ -578,13 +579,13 @@
       </main>
 
       {#if isFetchingMore}
-        <div class="flex justify-center items-center py-8">
-          <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        <div class="flex items-center justify-center py-8">
+          <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-400 border-t-transparent"></div>
         </div>
       {/if}
 
       {#if !timelineCursor && displayItems.length > 0 && !isFetchingMore}
-        <p class="text-center text-gray-500 py-8">End of feed.</p>
+        <p class="py-8 text-center text-gray-500">End of feed.</p>
       {/if}
     </div>
   {:else}

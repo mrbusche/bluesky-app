@@ -1,7 +1,8 @@
 <script>
+  import { flattenThread } from '$lib/utils';
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  import { flattenThread } from '$lib/utils';
+
   import FeedPost from './FeedPost.svelte';
 
   const { startPost, agent, onClose, onLike, onProfile } = $props();
@@ -59,31 +60,31 @@
 </script>
 
 <div
-  class="fixed inset-0 z-50 bg-gray-900 overflow-y-auto"
+  class="fixed inset-0 z-50 overflow-y-auto bg-gray-900"
   transition:fly={{ x: 500, duration: 300, opacity: 1 }}
   ontouchstart={handleTouchStart}
   ontouchend={handleTouchEnd}
   bind:this={container}
 >
-  <header class="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex items-center space-x-4 z-10">
-    <button onclick={onClose} type="button" class="text-blue-400 font-bold flex items-center">
-      <span class="text-xl mr-1">&larr;</span> Back
+  <header class="sticky top-0 z-10 flex items-center space-x-4 border-b border-gray-700 bg-gray-900 p-4">
+    <button onclick={onClose} type="button" class="flex items-center font-bold text-blue-400">
+      <span class="mr-1 text-xl">&larr;</span> Back
     </button>
     <h2 class="text-xl font-bold text-white">Thread</h2>
   </header>
 
-  <div class="max-w-2xl mx-auto pb-20 min-h-screen">
+  <div class="mx-auto min-h-screen max-w-2xl pb-20">
     {#if loading}
       <div class="flex justify-center py-8">
-        <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-400 border-t-transparent"></div>
       </div>
     {:else if error}
-      <div class="p-4 text-red-400 text-center">{error}</div>
+      <div class="p-4 text-center text-red-400">{error}</div>
     {:else}
       {#each threadPosts as item (item.post.uri)}
         <FeedPost {item} isThreadView={true} onlike={onLike} onprofile={(e) => onProfile(e.handle)} />
         {#if item !== threadPosts[threadPosts.length - 1]}
-          <div class="w-0.5 h-4 bg-gray-700 mx-auto my-0"></div>
+          <div class="mx-auto my-0 h-4 w-0.5 bg-gray-700"></div>
         {/if}
       {/each}
     {/if}
