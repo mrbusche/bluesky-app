@@ -1,11 +1,12 @@
 <script>
-  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { auth } from '$lib/auth.svelte.js';
   import FeedPost from '$lib/FeedPost.svelte';
   import UserProfileModal from '$lib/UserProfileModal.svelte';
   import { flattenThread, toggleLike as toggleLikeUtil } from '$lib/utils';
+  import { onMount } from 'svelte';
+
   import '../../../app.css';
 
   let threadPosts = $state([]);
@@ -85,21 +86,21 @@
   onClose={() => (showProfile = false)}
 />
 
-<div class="min-h-screen bg-gray-900 text-gray-200 pb-12">
-  <header class="sticky top-0 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 p-4 flex items-center space-x-4 z-10">
-    <a href="/" class="text-blue-400 font-bold flex items-center hover:text-blue-300 transition-colors">
-      <span class="text-xl mr-1">&larr;</span> Back to Feed
+<div class="min-h-screen bg-gray-900 pb-12 text-gray-200">
+  <header class="sticky top-0 z-10 flex items-center space-x-4 border-b border-gray-700 bg-gray-900/95 p-4 backdrop-blur-sm">
+    <a href="/" class="flex items-center font-bold text-blue-400 transition-colors hover:text-blue-300">
+      <span class="mr-1 text-xl">&larr;</span> Back to Feed
     </a>
     <h2 class="text-xl font-bold text-white">Thread</h2>
   </header>
 
-  <div class="max-w-2xl mx-auto">
+  <div class="mx-auto max-w-2xl">
     {#if loading}
       <div class="flex justify-center py-12">
-        <div class="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-400 border-t-transparent"></div>
       </div>
     {:else if error}
-      <div class="p-8 text-red-400 text-center">{error}</div>
+      <div class="p-8 text-center text-red-400">{error}</div>
       <div class="text-center">
         <a href="/" class="text-blue-400 hover:underline">Return home</a>
       </div>
@@ -107,11 +108,11 @@
       {#each threadPosts as item (item.post.uri)}
         <FeedPost {item} isThreadView={true} onlike={toggleLike} onprofile={(e) => handleUserProfile(e.handle)} />
         {#if item !== threadPosts[threadPosts.length - 1]}
-          <div class="w-0.5 h-4 bg-gray-700 mx-auto my-0"></div>
+          <div class="mx-auto my-0 h-4 w-0.5 bg-gray-700"></div>
         {/if}
       {/each}
 
-      <div class="p-8 text-center text-gray-500 text-sm">End of thread</div>
+      <div class="p-8 text-center text-sm text-gray-500">End of thread</div>
     {/if}
   </div>
 </div>

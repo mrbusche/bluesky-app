@@ -6,18 +6,18 @@
 </script>
 
 {#if quotedPost}
-  <div class={`border border-gray-600 rounded-lg p-3 ${className}`}>
+  <div class={`rounded-lg border border-gray-600 p-3 ${className}`}>
     <div class="flex items-center space-x-2 text-sm text-gray-400">
       <img
         src={quotedPost.author?.avatar || 'https://placehold.co/24x24/1a202c/ffffff?text=?'}
-        class="w-6 h-6 rounded-full bg-gray-600"
+        class="h-6 w-6 rounded-full bg-gray-600"
         alt={quotedPost.author?.displayName || quotedPost.author?.handle}
       />
       <span class="font-bold text-white">{quotedPost.author?.displayName || quotedPost.author?.handle}</span>
       <span class="truncate">@{quotedPost.author?.handle}</span>
     </div>
     <div
-      class="text-white mt-2 text-sm whitespace-pre-wrap break-words"
+      class="mt-2 text-sm break-words whitespace-pre-wrap text-white"
       role="button"
       tabindex="0"
       onclick={(e) => {

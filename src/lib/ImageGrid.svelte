@@ -6,7 +6,7 @@
 </script>
 
 {#if images && images.length > 0}
-  <div class={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${className}`}>
+  <div class={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${className}`}>
     {#each images as img}
       {#if img.fullsize || img.thumb}
         {#if link}
@@ -15,7 +15,7 @@
           <img
             src={img.thumb || img.fullsize}
             alt={img.alt || 'Embedded image'}
-            class="rounded-lg w-full h-auto object-cover border border-gray-600"
+            class="h-auto w-full rounded-lg border border-gray-600 object-cover"
           />
         {/if}
       {/if}
