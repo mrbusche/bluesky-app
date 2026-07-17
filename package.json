@@ -16,28 +16,28 @@
     "fmt": "oxfmt"
   },
   "dependencies": {
-    "@atproto/api": "0.20.28",
+    "@atproto/api": "0.20.30",
     "hls.js": "1.6.16"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
     "@sveltejs/adapter-auto": "7.0.1",
     "@sveltejs/adapter-netlify": "6.0.4",
-    "@sveltejs/kit": "2.69.2",
+    "@sveltejs/kit": "2.70.0",
     "@sveltejs/vite-plugin-svelte": "7.2.0",
-    "@tailwindcss/vite": "4.3.2",
+    "@tailwindcss/vite": "4.3.3",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/svelte": "5.4.2",
     "happy-dom": "20.10.6",
     "jsdom": "29.1.1",
-    "oxfmt": "0.58.0",
-    "oxlint": "1.73.0",
-    "svelte": "5.56.4",
-    "svelte-check": "4.7.2",
-    "tailwindcss": "4.3.2",
+    "oxfmt": "0.59.0",
+    "oxlint": "1.74.0",
+    "svelte": "5.56.6",
+    "svelte-check": "4.7.3",
+    "tailwindcss": "4.3.3",
     "tslib": "2.8.1",
     "typescript": "7.0.2",
-    "vite": "8.1.4",
+    "vite": "8.1.5",
     "vitest": "4.1.10"
   },
   "allowScripts": {
