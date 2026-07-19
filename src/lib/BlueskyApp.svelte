@@ -142,7 +142,6 @@
   $effect(() => {
     if (!auth.session) return;
 
-    displayItems.length;
     tick().then(() => {
       ensurePostObserver();
       observeRenderedPosts();
