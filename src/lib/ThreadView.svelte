@@ -1,7 +1,8 @@
 <script>
-  import { flattenThread } from '$lib/utils';
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
+
+  import { flattenThread } from '#lib/utils.js';
 
   import FeedPost from './FeedPost.svelte';
 

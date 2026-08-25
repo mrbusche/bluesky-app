@@ -1,4 +1,6 @@
+import adapter from '@sveltejs/adapter-auto';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, lazyPlugins } from 'vite-plus';
 
@@ -24,7 +26,20 @@ export default defineConfig({
     svelte: true,
     sortPackageJson: true,
   },
-  plugins: lazyPlugins(() => [sveltekit(), tailwindcss()]),
+
+  plugins: lazyPlugins(() => [
+    sveltekit({
+      // Consult https://kit.svelte.dev/docs/integrations#preprocessors
+      // for more information about preprocessors
+      preprocess: vitePreprocess(),
+
+      // adapter-auto is suitable for most deployments.
+      // See https://kit.svelte.dev/docs/adapters for more information about adapters.
+      adapter: adapter(),
+    }),
+    tailwindcss(),
+  ]),
+
   test: {
     environment: 'jsdom',
     globals: true,

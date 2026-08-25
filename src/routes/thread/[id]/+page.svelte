@@ -1,11 +1,12 @@
 <script>
   import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
-  import { auth } from '$lib/auth.svelte.js';
-  import FeedPost from '$lib/FeedPost.svelte';
-  import UserProfileModal from '$lib/UserProfileModal.svelte';
-  import { flattenThread, toggleLike as toggleLikeUtil } from '$lib/utils';
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
+
+  import { auth } from '#lib/auth.svelte.js';
+  import FeedPost from '#lib/FeedPost.svelte';
+  import UserProfileModal from '#lib/UserProfileModal.svelte';
+  import { flattenThread, toggleLike as toggleLikeUtil } from '#lib/utils.js';
 
   import '../../../app.css';
 
@@ -16,7 +17,7 @@
   let showProfile = $state(false);
   let profileHandle = $state('');
 
-  const uri = $derived(decodeURIComponent($page.params.id));
+  const uri = $derived(decodeURIComponent(page.params.id));
 
   $effect(() => {
     if (auth.agent && uri) {
@@ -35,7 +36,7 @@
   async function fetchThread() {
     loading = true;
     try {
-      const { data } = await auth.agent.getPostThread({ uri: uri });
+      const { data } = await auth.agent.getPostThread({ uri });
       if (data.thread) {
         threadPosts = flattenThread(data.thread);
       }
@@ -88,9 +89,10 @@
 
 <div class="min-h-screen bg-gray-900 pb-12 text-gray-200">
   <header class="sticky top-0 z-10 flex items-center space-x-4 border-b border-gray-700 bg-gray-900/95 p-4 backdrop-blur-sm">
-    <a href="/" class="flex items-center font-bold text-blue-400 transition-colors hover:text-blue-300">
-      <span class="mr-1 text-xl">&larr;</span> Back to Feed
-    </a>
+    <a href="/" class="flex items-center font-bold text-blue-400 transition-colors hover:text-blue-300"
+      ><span class="mr-1 text-xl">←</span>Back to Feed</a
+    >
+
     <h2 class="text-xl font-bold text-white">Thread</h2>
   </header>
 
@@ -107,6 +109,7 @@
     {:else}
       {#each threadPosts as item (item.post.uri)}
         <FeedPost {item} isThreadView={true} onlike={toggleLike} onprofile={(e) => handleUserProfile(e.handle)} />
+
         {#if item !== threadPosts[threadPosts.length - 1]}
           <div class="mx-auto my-0 h-4 w-0.5 bg-gray-700"></div>
         {/if}
