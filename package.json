@@ -17,7 +17,7 @@
     "prepare": "vp config"
   },
   "dependencies": {
-    "@atproto/api": "0.20.41",
+    "@atproto/api": "0.20.42",
     "hls.js": "1.7.1"
   },
   "devDependencies": {
@@ -29,18 +29,18 @@
     "@tailwindcss/vite": "4.3.3",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/svelte": "5.4.2",
-    "happy-dom": "20.11.6",
+    "happy-dom": "20.11.13",
     "jsdom": "30.0.1",
     "svelte": "5.56.10",
     "svelte-check": "4.7.6",
     "tailwindcss": "4.3.3",
     "tslib": "2.8.1",
     "typescript": "7.0.2",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9",
-    "vite-plus": "0.2.9"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
+    "vite-plus": "0.3.0"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.9"
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0"
   },
   "devEngines": {
     "packageManager": {
