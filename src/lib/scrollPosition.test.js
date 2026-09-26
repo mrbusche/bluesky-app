@@ -16,7 +16,11 @@ const localStorageMock = (() => {
     }),
   };
 })();
-global.localStorage = localStorageMock;
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+  configurable: true,
+});
 
 describe('Scroll Position Storage', () => {
   const LAST_VIEWED_POST_TIMESTAMP_KEY = 'blueskyLastViewedPostTimestamp';
