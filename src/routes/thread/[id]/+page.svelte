@@ -1,11 +1,12 @@
 <script>
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
-  import { auth } from '$lib/auth.svelte.js';
-  import FeedPost from '$lib/FeedPost.svelte';
-  import UserProfileModal from '$lib/UserProfileModal.svelte';
-  import { flattenThread, toggleLike as toggleLikeUtil } from '$lib/utils';
   import { onMount } from 'svelte';
+
+  import { auth } from '#lib/auth.svelte.js';
+  import FeedPost from '#lib/FeedPost.svelte';
+  import UserProfileModal from '#lib/UserProfileModal.svelte';
+  import { flattenThread, toggleLike as toggleLikeUtil } from '#lib/utils';
 
   import '../../../app.css';
 
