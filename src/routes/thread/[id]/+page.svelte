@@ -1,6 +1,6 @@
 <script>
   import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
 
   import { auth } from '#lib/auth.svelte.js';
@@ -17,7 +17,7 @@
   let showProfile = $state(false);
   let profileHandle = $state('');
 
-  const uri = $derived(decodeURIComponent($page.params.id));
+  const uri = $derived(decodeURIComponent(page.params.id));
 
   $effect(() => {
     if (auth.agent && uri) {
