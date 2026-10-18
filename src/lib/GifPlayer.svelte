@@ -13,14 +13,14 @@
   onMount(() => {
     if (!videoEl || !playlist) return;
 
-    if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS (Safari)
-      videoEl.src = playlist;
-    } else if (Hls.isSupported()) {
+    if (Hls.isSupported()) {
       // HLS.js for other browsers
       hls = new Hls({ enableWorker: true, lowLatencyMode: false });
       hls.loadSource(playlist);
       hls.attachMedia(videoEl);
+    } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS (Safari)
+      videoEl.src = playlist;
     } else {
       // Fallback
       videoEl.src = playlist;
