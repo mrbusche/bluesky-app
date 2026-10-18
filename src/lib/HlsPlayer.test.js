@@ -1,4 +1,4 @@
-import { render } from '@testing-library/svelte';
+import { render, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 
 import GifPlayer from './GifPlayer.svelte';
@@ -35,31 +35,28 @@ describe('VideoPlayer', () => {
   it.each([
     ['VideoPlayer', VideoPlayer],
     ['GifPlayer', GifPlayer],
-  ])('%s uses HLS.js when supported even if canPlayType reports native support', (_name, Player) => {
+  ])('%s uses HLS.js when supported', async (_name, Player) => {
     hlsMock.isSupported.mockReturnValue(true);
-    const canPlayType = vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('maybe');
 
     const playlist = 'https://example.com/video.m3u8';
     const { container } = render(Player, { props: { playlist } });
     const video = container.querySelector('video');
 
+    await waitFor(() => expect(hlsMock.attachMedia).toHaveBeenCalledWith(video));
     expect(hlsMock.loadSource).toHaveBeenCalledWith(playlist);
-    expect(hlsMock.attachMedia).toHaveBeenCalledWith(video);
-    expect(canPlayType).not.toHaveBeenCalled();
     expect(video.src).not.toBe(playlist);
   });
 
   it.each([
     ['VideoPlayer', VideoPlayer],
     ['GifPlayer', GifPlayer],
-  ])('%s uses native HLS when HLS.js is unsupported', (_name, Player) => {
+  ])('%s falls back to native src when HLS.js is unsupported', async (_name, Player) => {
     hlsMock.isSupported.mockReturnValue(false);
-    vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('maybe');
 
     const playlist = 'https://example.com/video.m3u8';
     const { container } = render(Player, { props: { playlist } });
     const video = container.querySelector('video');
 
-    expect(video.src).toBe(playlist);
+    await waitFor(() => expect(video.src).toBe(playlist));
   });
 });

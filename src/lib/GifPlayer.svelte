@@ -1,5 +1,4 @@
 <script>
-  import Hls from 'hls.js';
   import { onMount } from 'svelte';
 
   // GifPlayer - Renders animated GIFs that come as video embeds with presentation='gif'
@@ -13,18 +12,21 @@
   onMount(() => {
     if (!videoEl || !playlist) return;
 
-    if (Hls.isSupported()) {
-      // HLS.js for other browsers
-      hls = new Hls({ enableWorker: true, lowLatencyMode: false });
-      hls.loadSource(playlist);
-      hls.attachMedia(videoEl);
-    } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS (Safari)
-      videoEl.src = playlist;
-    } else {
-      // Fallback
-      videoEl.src = playlist;
-    }
+    let cancelled = false;
+
+    // Load hls.js lazily so it stays out of the main bundle
+    import('hls.js').then(({ default: Hls }) => {
+      if (cancelled) return;
+      if (Hls.isSupported()) {
+        // HLS.js is preferred; Chrome reports native HLS support but fails to play it
+        hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+        hls.loadSource(playlist);
+        hls.attachMedia(videoEl);
+      } else {
+        // Native HLS (Safari) or fallback
+        videoEl.src = playlist;
+      }
+    });
 
     // Auto-play when in viewport for GIFs
     if ('IntersectionObserver' in window) {
@@ -44,6 +46,7 @@
     }
 
     return () => {
+      cancelled = true;
       if (hls) {
         hls.destroy();
         hls = null;
