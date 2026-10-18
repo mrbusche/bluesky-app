@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
+    "check": "vp check",
     "lint": "vp lint",
     "fmt": "vp fmt",
     "prepare": "vp config"
@@ -25,7 +26,6 @@
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
-    "@sveltejs/adapter-auto": "8.0.0",
     "@sveltejs/adapter-netlify": "7.0.1",
     "@sveltejs/kit": "3.1.0",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
